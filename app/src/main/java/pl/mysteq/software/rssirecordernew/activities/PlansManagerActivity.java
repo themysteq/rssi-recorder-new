@@ -52,7 +52,7 @@ public class PlansManagerActivity extends Activity {
                     public void onSelectedFilePaths(String[] files) {
                         if(files.length ==1){
                             Log.d(LogTAG,"Sending event: "+files[0]);
-                            EventBus.getDefault().post(new AddPlanEvent(files[0]));
+                            EventBus.getDefault().post(new AddPlanEvent(files[0],null));
 
                         }
                         else

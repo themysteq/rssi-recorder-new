@@ -6,10 +6,13 @@ package pl.mysteq.software.rssirecordernew.events;
 
 public class AddPlanEvent {
     private String imageFilePath;
-    public AddPlanEvent(String pathToImageFile){
+    private String name;
+    public AddPlanEvent(String pathToImageFile,String name){
         this.imageFilePath = pathToImageFile;
+        this.name = name;
     }
     public String getImageFilePath(){
         return this.imageFilePath;
     }
+    public String getName() { return this.name; }
 }
