@@ -19,6 +19,9 @@ public class PlanBundle {
     @SerializedName("plan_bundle_name")
     private String planBundleName ;
 
+    @SerializedName("comment")
+    private String comment;
+
     public PlanBundle(){}
 
     public String getPlanBundleName() {
