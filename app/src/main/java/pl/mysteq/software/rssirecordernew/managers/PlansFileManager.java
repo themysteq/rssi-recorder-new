@@ -22,7 +22,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 
 import pl.mysteq.software.rssirecordernew.events.AddPlanEvent;
+import pl.mysteq.software.rssirecordernew.events.BundlesReloadedEvent;
 import pl.mysteq.software.rssirecordernew.events.CreateBundleEvent;
+import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadPlansEvent;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
@@ -68,6 +70,7 @@ public final class PlansFileManager {
     private FilenameFilter planFilter = null;
     private FilenameFilter measureFilter = null;
 
+    protected ArrayList<PlanBundle> bundlesContainerList = null;
 
     private PlansFileManager(){
         Log.d(LogTAG,"constructing...");
@@ -97,10 +100,15 @@ public final class PlansFileManager {
         appExternalPlansFolder = createExternalSubFolder(appExternalBaseFolder,plans_subfolder_name);
         appExternalMeasuresFolder = createExternalSubFolder(appExternalBaseFolder,measures_subfolder_name);
 
+        bundlesContainerList = new ArrayList<PlanBundle>();
+
         EventBus.getDefault().register(this);
         Log.d(LogTAG,"constructed");
     }
 
+    public ArrayList<PlanBundle> getBundles(){
+        return this.bundlesContainerList;
+    }
     @Override
     protected void finalize() throws Throwable {
         EventBus.getDefault().unregister(this);
@@ -154,7 +162,6 @@ public final class PlansFileManager {
     }
     /*
     @Subscribe(threadMode = ThreadMode.ASYNC)
-
     public void onMessage(ReloadPlansEvent event)
     {
         Log.d(LogTAG,"Received ReloadPlansEvent");
@@ -178,6 +185,20 @@ public final class PlansFileManager {
         }
     }
     */
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void onMessage(ReloadBundlesEvent event){
+        Log.d(LogTAG,"Received ReloadBundlesEvent");
+        PlanBundle planBundle = null;
+        JsonPlanBundleReader jsonPlanBundleReader = new JsonPlanBundleReader();
+        File[] bundles = this.appExternalBundlesFolder.listFiles(this.bundleFilter);
+        this.bundlesContainerList.clear();
+        for (File file : bundles) {
+            planBundle = jsonPlanBundleReader.run(file);
+            Log.d(LogTAG,"Read from storage bundle: "+planBundle.getPlanBundleName());
+            this.bundlesContainerList.add(planBundle);
+        }
+        EventBus.getDefault().post(new BundlesReloadedEvent());
+    }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void onMessage(CreateBundleEvent event){
@@ -196,6 +217,7 @@ public final class PlansFileManager {
         JsonPlanBundleWriter jsonPlanBundleWriter = new JsonPlanBundleWriter(planBundle,bundleFile);
         jsonPlanBundleWriter.run();
         Log.d(LogTAG,"Json wrote data!");
+        EventBus.getDefault().post(new ReloadBundlesEvent());
 
     }
 

@@ -6,6 +6,7 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.github.angads25.filepicker.controller.DialogSelectionListener;
@@ -14,11 +15,17 @@ import com.github.angads25.filepicker.model.DialogProperties;
 import com.github.angads25.filepicker.view.FilePickerDialog;
 
 import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 
 import pl.mysteq.software.rssirecordernew.R;
 import pl.mysteq.software.rssirecordernew.events.AddPlanEvent;
+import pl.mysteq.software.rssirecordernew.events.BundlesReloadedEvent;
+import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
+import pl.mysteq.software.rssirecordernew.events.ReloadPlansEvent;
+import pl.mysteq.software.rssirecordernew.managers.BundlesArrayAdapter;
 import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
 
 public class PlansManagerActivity extends Activity {
@@ -29,9 +36,11 @@ public class PlansManagerActivity extends Activity {
     private FilePickerDialog chooseNewPlanDialog;
     private PlansFileManager plansFileManager;
 
+    BundlesArrayAdapter arrayAdapter = null;
+
     //widgets
     Button addNewPlanButton ;
-
+    ListView plansListView;
 
 
     @Override
@@ -53,6 +62,7 @@ public class PlansManagerActivity extends Activity {
                         if(files.length ==1){
                             Log.d(LogTAG,"Sending event: "+files[0]);
                             EventBus.getDefault().post(new AddPlanEvent(files[0],null));
+                            EventBus.getDefault().post(new ReloadPlansEvent());
 
                         }
                         else
@@ -66,6 +76,8 @@ public class PlansManagerActivity extends Activity {
             }
         });
 
+
+
     }
 
     @Override
@@ -73,6 +85,7 @@ public class PlansManagerActivity extends Activity {
         super.onContentChanged();
 
         plansFileManager = PlansFileManager.getInstance();
+        plansListView = (ListView) findViewById(R.id.plansListView);
 
         chooseNewPlanProperties = new DialogProperties();
         chooseNewPlanProperties.selection_type = DialogConfigs.SINGLE_MODE;
@@ -82,6 +95,32 @@ public class PlansManagerActivity extends Activity {
         chooseNewPlanProperties.offset = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         chooseNewPlanProperties.extensions = PlansFileManager.plans_extensions.split(":");
 
+        arrayAdapter = new BundlesArrayAdapter(this,plansFileManager.getBundles());
+        plansListView.setAdapter(arrayAdapter);
+
+        EventBus.getDefault().post(new ReloadBundlesEvent());
 
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onStop()
+    {
+        super.onStop();
+        EventBus.getDefault().unregister(this);
+    }
+
+    //FIXME: do poprawki bo chyba nie ten tryb
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onMessage(BundlesReloadedEvent event){
+        Log.d(LogTAG, "received BundlesReloadedEvent");
+        Log.d(LogTAG,String.format("Bundles: %d",plansFileManager.getBundles().size()));
+        arrayAdapter.notifyDataSetChanged();
+    }
+
 }
