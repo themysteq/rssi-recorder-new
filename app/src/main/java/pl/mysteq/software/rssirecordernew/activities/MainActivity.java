@@ -3,6 +3,7 @@ package pl.mysteq.software.rssirecordernew.activities;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -11,6 +12,8 @@ import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
 
 public class MainActivity extends Activity {
 
+    public static final int INTENT_RESULT_CODE_CHOOSE_PLAN = 2001;
+    private static final String LogTAG = "MainActivity";
     //widgets
     Button planManagerButton;
 
@@ -27,9 +30,19 @@ public class MainActivity extends Activity {
                 //odpal nowy plan manager
 
                 Intent plansManagerIntent = new Intent(getBaseContext(), PlansManagerActivity.class);
-                startActivity(plansManagerIntent);
+                startActivityForResult(plansManagerIntent,INTENT_RESULT_CODE_CHOOSE_PLAN);
             }
         });
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == INTENT_RESULT_CODE_CHOOSE_PLAN)
+        {
+            Log.d(LogTAG,"onActivityResult");
+            String selectedBundleName = data.getStringExtra("bundle_name");
+            Log.d(LogTAG,"Received bundle name: "+selectedBundleName);
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
 }
