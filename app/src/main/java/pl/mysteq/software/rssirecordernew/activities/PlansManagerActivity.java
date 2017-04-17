@@ -60,8 +60,11 @@ public class PlansManagerActivity extends Activity {
                     @Override
                     public void onSelectedFilePaths(String[] files) {
                         if(files.length ==1){
+                            File srcFile = new File(files[0]);
                             Log.d(LogTAG,"Sending event: "+files[0]);
-                            EventBus.getDefault().post(new AddPlanEvent(files[0],null));
+                            Log.d(LogTAG,"source namefile: "+srcFile.getName());
+                           // EventBus.getDefault().post(new AddPlanEvent(files[0],null));
+                            EventBus.getDefault().post(new AddPlanEvent(files[0],srcFile.getName()));
                             EventBus.getDefault().post(new ReloadPlansEvent());
 
                         }

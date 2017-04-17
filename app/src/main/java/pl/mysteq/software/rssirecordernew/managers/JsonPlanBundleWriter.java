@@ -19,12 +19,12 @@ public class JsonPlanBundleWriter {
 
     private PlanBundle planBundle;
     private File bundleFile;
-    //private ArrayList<String> measuresFiles;
+   // private ArrayList<String> measuresFiles;
 
     public JsonPlanBundleWriter(PlanBundle planBundle,File bundleFile ){
         this.planBundle = planBundle;
         this.bundleFile = bundleFile;
-       // this.measuresFiles = measuresFiles;
+        //this.measuresFiles = measuresFiles;
     }
 
     protected Void run(){
