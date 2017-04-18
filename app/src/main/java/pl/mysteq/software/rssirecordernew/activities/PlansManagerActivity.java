@@ -90,7 +90,7 @@ public class PlansManagerActivity extends Activity {
                 PlanBundle item = (PlanBundle) parent.getItemAtPosition(position);
                 Log.d(LogTAG,"selected name: "+item.getPlanBundleName());
 
-                setResult(0,getIntent().putExtra("bundle_name",item.getPlanBundleName()));
+                setResult(Activity.RESULT_OK,getIntent().putExtra("bundle_name",item.getPlanBundleName()));
                 finish();
 
             }

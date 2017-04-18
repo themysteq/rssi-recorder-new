@@ -37,6 +37,8 @@ public final class PlansFileManager {
     private static PlansFileManager instance = null;
     private  static final String LogTAG = "PlansFileManager";
 
+    public static final String SHAREDPREF = "selected_bundle_shared_pref_key";
+
     public static final String plan_interfix = ".plan";
     public static final String bundle_suffix = ".bundle.json";
     public static final String external_storage_app_folder_name = "/rssi-recorder-new";
