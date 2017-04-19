@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -27,6 +28,7 @@ import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadPlansEvent;
 import pl.mysteq.software.rssirecordernew.managers.BundlesArrayAdapter;
 import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
+import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
 public class PlansManagerActivity extends Activity {
 
@@ -76,6 +78,21 @@ public class PlansManagerActivity extends Activity {
                 });
                 chooseNewPlanDialog.setTitle("Pick a plan");
                 chooseNewPlanDialog.show();
+            }
+        });
+
+        //kliknięcie elementu listy wybiera go jako planu do pomiarow
+        plansListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Log.d(LogTAG, String.format("clicked item: %d, id: %d",position,id));
+                PlanBundle item = (PlanBundle) parent.getItemAtPosition(position);
+                Log.d(LogTAG,"selected name: "+item.getPlanBundleName());
+
+                setResult(Activity.RESULT_OK,getIntent().putExtra("bundle_name",item.getPlanBundleName()));
+                finish();
+
             }
         });
 

@@ -10,6 +10,8 @@ import java.util.ArrayList;
 
 public class PlanBundle {
 
+    public static final String SELECTED_PLANBUNDLE_KEY = "plan_bundle_key";
+
     @SerializedName("building_plan_filename")
     private String buildingPlanFileName = "";
 
