@@ -18,6 +18,7 @@ import static pl.mysteq.software.rssirecordernew.structures.PlanBundle.SELECTED_
 public class MainActivity extends Activity {
 
     public static final int INTENT_RESULT_CODE_CHOOSE_PLAN = 2001;
+    public static final int INTENT_RESULT_CODE_SCANNING = 2002;
     private static final String LogTAG = "MainActivity";
     String selectedBundle = null;
 
@@ -56,7 +57,9 @@ public class MainActivity extends Activity {
                 else
                 {
                     Log.d(LogTAG, String.format("Creating new measure for plan: %s", selectedBundle));
-                    //Intent newMeasureIntent = null;
+
+                    Intent newMeasureIntent = new Intent(getBaseContext(),ScanningActivity.class);
+                    startActivityForResult(newMeasureIntent,INTENT_RESULT_CODE_SCANNING);
                     //startActivityForResult(newMeasureIntent,0)
                 }
             }
@@ -65,30 +68,39 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == INTENT_RESULT_CODE_CHOOSE_PLAN  && data != null && resultCode == Activity.RESULT_OK)
+        Log.d(LogTAG, "onActivityResult");
+        if (requestCode == INTENT_RESULT_CODE_CHOOSE_PLAN)
         {
-            String selectedBundleName = data.getStringExtra("bundle_name");
-            SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putString(SELECTED_PLANBUNDLE_KEY,selectedBundleName);
-            editor.commit();
-            selectedBundle = selectedBundleName;
-            Log.d(LogTAG, "onActivityResult");
-            selectedPlanTextView.setText(selectedBundle);
-            Log.d(LogTAG, "Received bundle name: " + selectedBundleName);
+            if(data != null && resultCode == Activity.RESULT_OK)
+            {
+                String selectedBundleName = data.getStringExtra("bundle_name");
+                SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString(SELECTED_PLANBUNDLE_KEY,selectedBundleName);
+                editor.commit();
+                selectedBundle = selectedBundleName;
+
+                selectedPlanTextView.setText(selectedBundle);
+                Log.d(LogTAG, "Received bundle name: " + selectedBundleName);
+            }else
+            {
+                Log.w(LogTAG,"No bundle selected!");
+                if(selectedBundle == null){
+                    selectedPlanTextView.setText("-- none --");
+                }
+                else{
+                    selectedPlanTextView.setText(selectedBundle);
+                    Log.d(LogTAG,"But using old value: "+selectedBundle);
+                }
+            }
+        }
+        else if( requestCode == INTENT_RESULT_CODE_SCANNING)
+        {
+            Log.d(LogTAG,"On result INTENT_RESULT_CODE_SCANNING");
         }
         else
         {
-            Log.w(LogTAG,"No bundle selected!");
-            if(selectedBundle == null){
-                selectedPlanTextView.setText("-- none --");
-            }
-            else{
-                selectedPlanTextView.setText(selectedBundle);
-                Log.d(LogTAG,"But using old value: "+selectedBundle);
-            }
-
-
+            Log.d(LogTAG,"Unknown Intent result");
         }
 
         super.onActivityResult(requestCode, resultCode, data);
@@ -104,4 +116,5 @@ public class MainActivity extends Activity {
         selectedBundle = sharedPreferences.getString(SELECTED_PLANBUNDLE_KEY,null);
         selectedPlanTextView.setText(selectedBundle);
     }
+
 }
