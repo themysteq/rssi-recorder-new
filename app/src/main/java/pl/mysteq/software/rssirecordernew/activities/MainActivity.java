@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import pl.mysteq.software.rssirecordernew.R;
 
@@ -19,9 +20,12 @@ public class MainActivity extends Activity {
     public static final int INTENT_RESULT_CODE_CHOOSE_PLAN = 2001;
     private static final String LogTAG = "MainActivity";
     String selectedBundle = null;
+
     //widgets
     Button planManagerButton;
+    Button newMeasureButton;
     TextView selectedPlanTextView  = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,11 +45,27 @@ public class MainActivity extends Activity {
                 startActivityForResult(plansManagerIntent,INTENT_RESULT_CODE_CHOOSE_PLAN);
             }
         });
+
+        newMeasureButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(selectedBundle == null)
+                {
+                    Toast.makeText(v.getContext(),"You have to select plan!",Toast.LENGTH_LONG).show();
+                }
+                else
+                {
+                    Log.d(LogTAG, String.format("Creating new measure for plan: %s", selectedBundle));
+                    //Intent newMeasureIntent = null;
+                    //startActivityForResult(newMeasureIntent,0)
+                }
+            }
+        });
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == INTENT_RESULT_CODE_CHOOSE_PLAN )
+        if (requestCode == INTENT_RESULT_CODE_CHOOSE_PLAN  && data != null && resultCode == Activity.RESULT_OK)
         {
             String selectedBundleName = data.getStringExtra("bundle_name");
             SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
@@ -53,17 +73,24 @@ public class MainActivity extends Activity {
             editor.putString(SELECTED_PLANBUNDLE_KEY,selectedBundleName);
             editor.commit();
             selectedBundle = selectedBundleName;
-            if(resultCode == Activity.RESULT_OK) {
-                Log.d(LogTAG, "onActivityResult");
-                selectedPlanTextView.setText(selectedBundle);
-                Log.d(LogTAG, "Received bundle name: " + selectedBundleName);
-            }
-            else
-            {
-                selectedPlanTextView.setText("-- none --");
-                Log.w(LogTAG,"No bundle selected!");
-            }
+            Log.d(LogTAG, "onActivityResult");
+            selectedPlanTextView.setText(selectedBundle);
+            Log.d(LogTAG, "Received bundle name: " + selectedBundleName);
         }
+        else
+        {
+            Log.w(LogTAG,"No bundle selected!");
+            if(selectedBundle == null){
+                selectedPlanTextView.setText("-- none --");
+            }
+            else{
+                selectedPlanTextView.setText(selectedBundle);
+                Log.d(LogTAG,"But using old value: "+selectedBundle);
+            }
+
+
+        }
+
         super.onActivityResult(requestCode, resultCode, data);
     }
 
@@ -72,6 +99,7 @@ public class MainActivity extends Activity {
         super.onContentChanged();
         planManagerButton = (Button)findViewById(R.id.openPlanManagerButton);
         selectedPlanTextView = (TextView) findViewById(R.id.selectedPlanTextView);
+        newMeasureButton = (Button) findViewById(R.id.newMeasureButton);
         SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
         selectedBundle = sharedPreferences.getString(SELECTED_PLANBUNDLE_KEY,null);
         selectedPlanTextView.setText(selectedBundle);
