@@ -187,7 +187,7 @@ public final class PlansFileManager {
         }
     }
     */
-    @Subscribe(threadMode = ThreadMode.ASYNC)
+    @Subscribe(threadMode = ThreadMode.ASYNC,sticky = true)
     public void onMessage(ReloadBundlesEvent event){
         Log.d(LogTAG,"Received ReloadBundlesEvent");
         PlanBundle planBundle = null;
@@ -222,6 +222,25 @@ public final class PlansFileManager {
         EventBus.getDefault().post(new ReloadBundlesEvent());
 
     }
+
+    public PlanBundle getBundleByName(String name){
+        for (PlanBundle planBundle : this.bundlesContainerList)
+        {
+            if(planBundle.getPlanBundleName().equals(name))
+            {
+                return planBundle;
+            }
+        }
+        return null;
+    }
+    public File getBundlePlanFile(PlanBundle planBundle){
+        return new File(getAppExternalPlansFolder(),planBundle.getBuildingPlanFileName());
+    }
+    /*public File getBundlePlanFile(String bundleName){
+
+    }
+    */
+
 
 
 

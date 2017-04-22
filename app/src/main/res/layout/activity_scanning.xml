@@ -27,28 +27,29 @@
         android:layout_alignParentStart="true">
 
         <FrameLayout
-            android:layout_width="700px"
-            android:layout_height="700px"
-            android:layout_weight="1"
-            android:id="@+id/frameLayoutWithImages">
+            android:id="@+id/frameLayoutWithImages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
 
             <ImageView
                 android:id="@+id/markupMeasuresImageView"
-                android:scaleType="matrix"
+                android:layout_width="match_parent"
                 android:layout_height="700px"
                 android:alpha="0.5"
-                android:layout_width="match_parent"
                 android:clickable="false"
                 android:elevation="2dp"
+                android:scaleType="matrix"
                 android:scaleX="1"
                 android:scaleY="1" />
+
             <ImageView
                 android:id="@+id/buildingPlanImageView"
-                android:scaleType="matrix"
-                android:layout_height="700px"
-                android:elevation="1dp"
-                android:alpha="0.5"
                 android:layout_width="match_parent"
+                android:layout_height="700px"
+                android:alpha="0.5"
+                android:elevation="1dp"
+                android:scaleType="matrix"
                 android:scaleX="1"
                 android:scaleY="1" />
 
@@ -57,30 +58,29 @@
 
 
         <TextView
-            android:text="TextView"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginBottom="44dp"
             android:id="@+id/scanningTextView"
-            tools:text=" wywołał).  Zauważcie, że nie tworzę sobie typu Obliczenia, tylko od razu po stworzeniu wywołuję na nim metodę run(). Jest to spowodowane m.in. tym, że AsyncTask możemy wykonać tylko raz. Aby wykonać zadanie ponownie należy stworzyć kolejną instancję.  Kolejną ciekawostką jest użycie metody onCreateDialog(int dialogID). Dlaczego tak, zamiast po prostu dialog.show()? Otóż dialog.show() może doprowadzić do wycieków pamięci w przypadku, gdy Activity w tle zostanie niespodziewanie zamknięte. W ten sposób całą odpowiedzialność za ewentualne wycieki pamięci przejmuje za nas Android, a my mamy jedną rzecz mniej o którą możemy się martwić. Niestety według dokumentacji od API 13 jest to metoda przedawniona i zaleca się teraz stosowanie kalsy DialogFragment z FragmentManager. Jeszcze się z tym nie zapoznałem. Jak zobaczę o co chodzi, to napiszę odpowiedni artykuł i podlinkuję tutaj."
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
             android:layout_alignParentBottom="true"
             android:layout_alignParentStart="true"
-            android:scrollHorizontally="false"
-            android:password="false"
+            android:layout_marginBottom="44dp"
             android:editable="false"
             android:fadeScrollbars="false"
             android:maxLines="4"
+            android:password="false"
+            android:scrollHorizontally="false"
             android:scrollbars="vertical"
-            android:textAppearance="@style/AppTheme" />
+            android:text="TextView"
+            android:textAppearance="@style/AppTheme"
+            tools:text=" wywołał).  Zauważcie, że nie tworzę sobie typu Obliczenia, tylko od razu po stworzeniu wywołuję na nim metodę run(). Jest to spowodowane m.in. tym, że AsyncTask możemy wykonać tylko raz. Aby wykonać zadanie ponownie należy stworzyć kolejną instancję.  Kolejną ciekawostką jest użycie metody onCreateDialog(int dialogID). Dlaczego tak, zamiast po prostu dialog.show()? Otóż dialog.show() może doprowadzić do wycieków pamięci w przypadku, gdy Activity w tle zostanie niespodziewanie zamknięte. W ten sposób całą odpowiedzialność za ewentualne wycieki pamięci przejmuje za nas Android, a my mamy jedną rzecz mniej o którą możemy się martwić. Niestety według dokumentacji od API 13 jest to metoda przedawniona i zaleca się teraz stosowanie kalsy DialogFragment z FragmentManager. Jeszcze się z tym nie zapoznałem. Jak zobaczę o co chodzi, to napiszę odpowiedni artykuł i podlinkuję tutaj." />
 
         <SeekBar
-            style="@style/AppTheme"
+            android:id="@+id/zoomSeekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:max="3"
-            android:progress="0"
-            android:id="@+id/zoomSeekBar"
-            android:layout_weight="1" />
+            android:progress="0" />
 
         <LinearLayout
             android:orientation="horizontal"

@@ -1,6 +1,7 @@
 package pl.mysteq.software.rssirecordernew.activities;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -10,7 +11,13 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+
 import pl.mysteq.software.rssirecordernew.R;
+import pl.mysteq.software.rssirecordernew.events.BundlesReloadedEvent;
+import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
+import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
 
 import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
 import static pl.mysteq.software.rssirecordernew.structures.PlanBundle.SELECTED_PLANBUNDLE_KEY;
@@ -26,12 +33,13 @@ public class MainActivity extends Activity {
     Button planManagerButton;
     Button newMeasureButton;
     TextView selectedPlanTextView  = null;
-
+    PlansFileManager plansFileManager = null;
+    ProgressDialog progressDialog = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        plansFileManager = PlansFileManager.getInstance();
 
 
         SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
@@ -58,9 +66,11 @@ public class MainActivity extends Activity {
                 {
                     Log.d(LogTAG, String.format("Creating new measure for plan: %s", selectedBundle));
 
+                    //start scanning activity
                     Intent newMeasureIntent = new Intent(getBaseContext(),ScanningActivity.class);
+                    newMeasureIntent.putExtra("PLAN_NAME",selectedBundle);
                     startActivityForResult(newMeasureIntent,INTENT_RESULT_CODE_SCANNING);
-                    //startActivityForResult(newMeasureIntent,0)
+
                 }
             }
         });
@@ -115,6 +125,30 @@ public class MainActivity extends Activity {
         SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
         selectedBundle = sharedPreferences.getString(SELECTED_PLANBUNDLE_KEY,null);
         selectedPlanTextView.setText(selectedBundle);
+        EventBus.getDefault().postSticky(new ReloadBundlesEvent());
+        //Toast.makeText(getApplicationContext(),"Loading ",Toast.LENGTH_LONG);
+        progressDialog = new ProgressDialog(this,ProgressDialog.STYLE_SPINNER);
+        progressDialog.setMessage("Loading application data");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+    }
+
+    @Subscribe
+    public void onMessage(BundlesReloadedEvent event){
+        progressDialog.dismiss();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onStop()
+    {
+        EventBus.getDefault().unregister(this);
+        super.onStop();
     }
 
 }
