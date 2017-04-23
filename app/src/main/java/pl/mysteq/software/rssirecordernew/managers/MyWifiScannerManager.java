@@ -1,6 +1,7 @@
 package pl.mysteq.software.rssirecordernew.managers;
 
 import android.content.Context;
+import android.graphics.Point;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.util.Log;
@@ -65,6 +66,7 @@ public final class MyWifiScannerManager {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void scanDone(WifiScanCompleted event)
     {
+
         ArrayList<ScanResult> scanResults = (ArrayList<ScanResult>) this.wifiManager.getScanResults();
         lastScanResults = new ArrayList<>();
 
@@ -78,6 +80,15 @@ public final class MyWifiScannerManager {
 
     public ArrayList<CustomScanResult> getLastScanResult(){
         return lastScanResults;
+    }
+
+    public MeasurePoint addMeasurePoint(ArrayList<CustomScanResult> list, Point point){
+        Log.d(LogTAG, String.format("add new measure: x: %d, y: %d", point.x,point.y));
+        MeasurePoint measurePoint = new MeasurePoint();
+        measurePoint.scanResultArrayList =(ArrayList<CustomScanResult>) list.clone();
+        measurePoint.set(point.x,point.y);
+        this.measurePointArrayList.add(measurePoint);
+        return measurePoint;
     }
 
 

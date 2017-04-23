@@ -7,7 +7,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Point;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -33,11 +38,12 @@ import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
 import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
-public class ScanningActivity extends Activity {
+public class ScanningActivity extends Activity implements SensorEventListener {
 
 
     //private variables
     public static final String LogTAG = "ScanningActivity";
+    ImageManipulationManager imageManipulationManager = null;
     private IntentFilter filter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
     private BroadcastReceiver broadcast = new BroadcastReceiver(){
         @Override
@@ -50,6 +56,11 @@ public class ScanningActivity extends Activity {
         }
 
     };
+    float[] mGravity;
+    float[] mGeomagnetic;
+    static final float alpha = 0.25f;
+    float azimut;
+    float degrees;
     Bitmap buildingBitmap = null;
     Bitmap measuresBitmap = null;
     MyWifiScannerManager scannerManagerInstance = null;
@@ -57,16 +68,24 @@ public class ScanningActivity extends Activity {
     String planName = null;
     ArrayList<CustomScanResult> customScanResults;
 
+    SensorManager mSensorManager ;
+    Sensor accelerometer;
+    Sensor magnetometer;
     //widgets
     SeekBar zoomBar = null;
     ImageView markupMeasuresImageView = null;
     ImageView buildingPlanImageView = null;
     Button scanButton = null;
+    Button mostRightButton = null;
+    Canvas measuresCanvas = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scanning);
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
         //bindings
 
@@ -74,15 +93,7 @@ public class ScanningActivity extends Activity {
 
 
 
-      /*  scanButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Log.d(LogTAG,"scan button");
-                scannerManagerInstance.scan();
-                registerReceiver(broadcast,filter);
-                //unregisterReceiver(broadcast);
-            }
-        });*/
+
 
         zoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -134,15 +145,24 @@ public class ScanningActivity extends Activity {
                     Log.d(LogTAG, "markup onDoubleTap");
                     scannerManagerInstance.scan();
                     customScanResults = scannerManagerInstance.getLastScanResult();
-                    for (CustomScanResult result : customScanResults){
+                    for (CustomScanResult result :  new ArrayList<CustomScanResult>(customScanResults)){
                         Log.i(LogTAG,String.format("ssid: %s, bssid: %s, rssi: %d",result.SSID,result.BSSID,result.level));
                     }
 
-                    Point pointOnImageView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages),e );
-                    Log.d(LogTAG, String.format("markup onSingleTapConfirmed. X: %d, Y: %d", pointOnImageView.x, pointOnImageView.y));
+                    Point pointOnView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages),e );
+                    Log.d(LogTAG, String.format("markup onSingleTapConfirmed. X: %d, Y: %d", pointOnView.x, pointOnView.y));
                     //gdzie tak na prawde klikłeś w obrazek
-                    Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView,pointOnImageView);
+
+                    Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView,pointOnView);
                     Log.d(LogTAG, String.format("On image: X: %d Y: %d", pointOnImage.x,pointOnImage.y));
+
+                    scannerManagerInstance.addMeasurePoint(customScanResults,pointOnImage);
+                    imageManipulationManager.drawPoint(pointOnImage);
+                    markupMeasuresImageView.setImageBitmap(imageManipulationManager.getBitmap());
+                    //markupMeasuresImageView.setImageBitmap(imageManipulationManager.getBitmap());
+
+
+
 
                     return true;
                 }
@@ -200,7 +220,17 @@ public class ScanningActivity extends Activity {
     protected void onResume()
     {
         super.onResume();
+        mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
         registerReceiver(broadcast,filter);
+
+
+    }
+    @Override
+    protected void onPause()
+    {
+        super.onPause();
+        mSensorManager.unregisterListener(this);
     }
 
     @Override
@@ -214,6 +244,7 @@ public class ScanningActivity extends Activity {
             Log.w(LogTAG,"BroadcastReceiver already unregistered");
         }
         scannerManagerInstance.stop();
+        Log.d(LogTAG,"calling onStop");
         super.onStop();
 
     }
@@ -234,15 +265,19 @@ public class ScanningActivity extends Activity {
         PlanBundle planBundle = plansFileManager.getBundleByName(planName);
         File planfile = plansFileManager.getBundlePlanFile(planBundle);
         Log.d(LogTAG,"plan filepath: "+planfile.getAbsolutePath());
+        imageManipulationManager = new ImageManipulationManager();
 
         buildingBitmap = BitmapFactory.decodeFile(planfile.getAbsolutePath());
         buildingPlanImageView.setImageBitmap(buildingBitmap);
-        measuresBitmap = Bitmap.createBitmap(buildingBitmap.getWidth(),buildingBitmap.getHeight(),Bitmap.Config.ARGB_8888);
-        markupMeasuresImageView.setImageBitmap(measuresBitmap);
+        //measuresBitmap = Bitmap.createBitmap(buildingBitmap.getWidth(),buildingBitmap.getHeight(),Bitmap.Config.ARGB_8888);
+        imageManipulationManager.setBlankBitmap(buildingBitmap);
         buildingPlanImageView.setEnabled(false);
         markupMeasuresImageView.setEnabled(false);
         scannerManagerInstance = MyWifiScannerManager.getInstance().init(getApplicationContext());
+        markupMeasuresImageView.setImageBitmap(imageManipulationManager.getBitmap());
         scannerManagerInstance.scan();
+        mostRightButton = (Button) findViewById(R.id.mostRightButton);
+        //markupMeasuresImageView.setImageBitmap(measuresBitmap);
         //BitmapFactory.decodeFile(planfile.getAbsolutePath());
         //
         //buildingPlanImageView.setImageBitmap(BitmapFactory.decodeFile(planfile.getAbsolutePath()));
@@ -268,4 +303,42 @@ public class ScanningActivity extends Activity {
         markupMeasuresImageView.setEnabled(true);
     }
 
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+            mGravity = lowPass(event.values.clone(),mGravity);
+            //mGravity = event.values;
+        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+            mGeomagnetic = lowPass(event.values.clone(),mGeomagnetic);
+            //mGeomagnetic = event.values;
+        if (mGravity != null && mGeomagnetic != null) {
+            float R[] = new float[9];
+            float I[] = new float[9];
+            boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
+            if (success) {
+                float orientation[] = new float[3];
+                SensorManager.getOrientation(R, orientation);
+                azimut = orientation[0]; // orientation contains: azimut, pitch and roll
+                degrees = (float)Math.toDegrees(azimut);
+                degrees +=180.f;
+                Log.d(LogTAG, String.format("azimuth: %f", degrees));
+
+            }
+        }
+        //mCustomDrawableView.invalidate();
+    }
+    protected float[] lowPass( float[] input, float[] output ) {
+
+        if ( output == null ) return input;
+        for ( int i=0; i<input.length; i++ ) {
+            output[i] = output[i] + alpha * (input[i] - output[i]);
+        }
+        return output;
+    }
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
 }
