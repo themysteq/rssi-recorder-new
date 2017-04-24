@@ -14,6 +14,8 @@ import android.widget.Toast;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
+import java.io.File;
+
 import pl.mysteq.software.rssirecordernew.R;
 import pl.mysteq.software.rssirecordernew.events.BundlesReloadedEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
@@ -35,6 +37,7 @@ public class MainActivity extends Activity {
     TextView selectedPlanTextView  = null;
     PlansFileManager plansFileManager = null;
     ProgressDialog progressDialog = null;
+    Button continueLastMeasureButton = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -42,7 +45,7 @@ public class MainActivity extends Activity {
         plansFileManager = PlansFileManager.getInstance();
 
 
-        SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
+        final SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
         selectedBundle = sharedPreferences.getString(SELECTED_PLANBUNDLE_KEY, null);
 
         planManagerButton.setOnClickListener(new View.OnClickListener() {
@@ -68,9 +71,29 @@ public class MainActivity extends Activity {
 
                     //start scanning activity
                     Intent newMeasureIntent = new Intent(getBaseContext(),ScanningActivity.class);
+                    //String measureUUID = UUID.randomUUID().toString();
+                    File measureFile = plansFileManager.generateNewMeasureFile(selectedBundle);
                     newMeasureIntent.putExtra("PLAN_NAME",selectedBundle);
+                    newMeasureIntent.putExtra("MEASURE_NAME", measureFile.getName());
+                    newMeasureIntent.putExtra("MEASURE_FULLPATH",measureFile.getAbsolutePath());
                     startActivityForResult(newMeasureIntent,INTENT_RESULT_CODE_SCANNING);
 
+                }
+            }
+        });
+        continueLastMeasureButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String measureName = getSharedPreferences(SHAREDPREF,MODE_PRIVATE).getString("LAST_MEASURE_NAME",null);
+                if(measureName!= null)
+                {
+                    String lastBundle = getSharedPreferences(SHAREDPREF,MODE_PRIVATE).getString("LAST_MEASURE_BUNDLE",null);
+                    if(lastBundle!= null && lastBundle.equals(selectedBundle)){
+                        Log.d(LogTAG, String.format("Continue measure %s for plan %s", measureName,selectedBundle ));
+                    }
+                }
+                else{
+                    Log.d(LogTAG,"Can't continue");
                 }
             }
         });
@@ -107,6 +130,20 @@ public class MainActivity extends Activity {
         else if( requestCode == INTENT_RESULT_CODE_SCANNING)
         {
             Log.d(LogTAG,"On result INTENT_RESULT_CODE_SCANNING");
+            if(data !=null){
+                String measure_fullpath = data.getStringExtra("MEASURE_FULLPATH");
+                File measureFile = new File(measure_fullpath);
+                String measureName = measureFile.getName();
+                SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString("LAST_MEASURE_NAME",measureName);
+                editor.putString("LAST_MEASURE_BUNDLE",selectedBundle);
+                editor.commit();
+
+            }
+            else {
+                Log.w(LogTAG,"data is null!");
+            }
         }
         else
         {
@@ -122,6 +159,8 @@ public class MainActivity extends Activity {
         planManagerButton = (Button)findViewById(R.id.openPlanManagerButton);
         selectedPlanTextView = (TextView) findViewById(R.id.selectedPlanTextView);
         newMeasureButton = (Button) findViewById(R.id.newMeasureButton);
+        continueLastMeasureButton = (Button) findViewById(R.id.continueMeasureButton);
+
         SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
         selectedBundle = sharedPreferences.getString(SELECTED_PLANBUNDLE_KEY,null);
         selectedPlanTextView.setText(selectedBundle);
@@ -142,6 +181,24 @@ public class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         EventBus.getDefault().register(this);
+    }
+
+    @Override
+    protected void onResume()
+    {
+        Log.d(LogTAG,"onResume fired!");
+        SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
+        String selectedBundle = sharedPreferences.getString(SELECTED_PLANBUNDLE_KEY,null);
+        String lastBundle = sharedPreferences.getString("LAST_MEASURE_BUNDLE",null);
+        if (lastBundle != null)
+        {
+            if (lastBundle.equals(selectedBundle))
+            {
+                continueLastMeasureButton.setEnabled(true);
+            }
+        }
+
+        super.onResume();
     }
 
     @Override

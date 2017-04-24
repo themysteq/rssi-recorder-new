@@ -25,7 +25,7 @@ public class ImageManipulationManager {
     public ImageManipulationManager(){
             this.canvas = new Canvas();
         this.pointPaint = new Paint();
-        this.pointPaint.setColor(Color.GREEN);
+        this.pointPaint.setColor(Color.RED);
         this.pointPaint.setStyle(Paint.Style.STROKE);
         this.pointPaint.setStrokeWidth(2f);
         this.pointPaint.setStrokeJoin(Paint.Join.ROUND);
@@ -74,5 +74,13 @@ public class ImageManipulationManager {
     {
 
         return this.bitmap;
+    }
+    public void rotate(float degrees)
+    {
+        this.canvas.rotate(degrees);
+    }
+    public void rotate(float degrees,float px,float py)
+    {
+        this.canvas.rotate(degrees, px, py);
     }
 }

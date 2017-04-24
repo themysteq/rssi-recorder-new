@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -25,7 +26,6 @@ import android.widget.SeekBar;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -43,7 +43,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
     //private variables
     public static final String LogTAG = "ScanningActivity";
-    ImageManipulationManager imageManipulationManager = null;
+    ImageManipulationManager markupsImageManipulationManager = null;
+    ImageManipulationManager buildingPlanManipulationManager = null;
     private IntentFilter filter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
     private BroadcastReceiver broadcast = new BroadcastReceiver(){
         @Override
@@ -58,9 +59,12 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     };
     float[] mGravity;
     float[] mGeomagnetic;
-    static final float alpha = 0.25f;
+    static final float alpha = 0.15f;
     float azimut;
     float degrees;
+    float degressWithOffset = 0;
+    float px,py;
+    float offset = 0;
     Bitmap buildingBitmap = null;
     Bitmap measuresBitmap = null;
     MyWifiScannerManager scannerManagerInstance = null;
@@ -78,6 +82,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     Button scanButton = null;
     Button mostRightButton = null;
     Canvas measuresCanvas = null;
+    String measureFullPath = null;
+    boolean lockOrient = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,13 +98,24 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
 
 
-
+        mostRightButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(lockOrient )
+                {
+                    offset = degrees;
+                }
+                lockOrient = ! lockOrient;
+               // mostRightButton.setEnabled(!mostRightButton.isEnabled());
+            }
+        });
 
 
         zoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 int scale = progress+1;
+                //markupMeasuresImageView.getImageMatrix()
                 markupMeasuresImageView.setScaleX(scale);
                 markupMeasuresImageView.setScaleY(scale);
 
@@ -132,6 +149,11 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                 public boolean onSingleTapConfirmed(MotionEvent e) {
                     Log.d(LogTAG,"single tap - scan");
                     scannerManagerInstance.scan();
+                    Point pointOnView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages),e );
+                    Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView,pointOnView);
+                    px = pointOnImage.x;
+                    py = pointOnImage.y;
+                    Log.d(LogTAG, String.format("px: %f, py: %f", px,py));
                     return true;
                    // return super.onSingleTapConfirmed(e);
                 }
@@ -150,16 +172,21 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     }
 
                     Point pointOnView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages),e );
-                    Log.d(LogTAG, String.format("markup onSingleTapConfirmed. X: %d, Y: %d", pointOnView.x, pointOnView.y));
+                    //Log.d(LogTAG, String.format("markup onSingleTapConfirmed. X: %d, Y: %d", pointOnView.x, pointOnView.y));
                     //gdzie tak na prawde klikłeś w obrazek
 
                     Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView,pointOnView);
-                    Log.d(LogTAG, String.format("On image: X: %d Y: %d", pointOnImage.x,pointOnImage.y));
+                   // px = pointOnImage.x;
+                   // py = pointOnImage.y;
+                    Log.d(LogTAG, String.format("On image: X: %d Y: %d, rotation: %f, px: %f, py: %f", pointOnImage.x,pointOnImage.y,degressWithOffset,px,py));
 
-                    scannerManagerInstance.addMeasurePoint(customScanResults,pointOnImage);
-                    imageManipulationManager.drawPoint(pointOnImage);
-                    markupMeasuresImageView.setImageBitmap(imageManipulationManager.getBitmap());
-                    //markupMeasuresImageView.setImageBitmap(imageManipulationManager.getBitmap());
+
+                    scannerManagerInstance.addMeasurePoint(customScanResults,pointOnImage,Math.round(degressWithOffset) );
+                    markupsImageManipulationManager.drawPoint(pointOnImage);
+                    markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
+
+                    //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
+                    //markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
 
 
 
@@ -215,6 +242,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     protected void onStart() {
         super.onStart();
         EventBus.getDefault().register(this);
+        //String planName = getIntent().getStringExtra("PLAN_NAME");
+        //plansFileManager.generateNewMeasureFile()
     }
     @Override
     protected void onResume()
@@ -243,6 +272,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         catch (IllegalArgumentException ex){
             Log.w(LogTAG,"BroadcastReceiver already unregistered");
         }
+
+        scannerManagerInstance.saveToFile(new File(measureFullPath));
         scannerManagerInstance.stop();
         Log.d(LogTAG,"calling onStop");
         super.onStop();
@@ -261,29 +292,31 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         Log.d(LogTAG,"Content changed");
         plansFileManager = PlansFileManager.getInstance();
         planName = getIntent().getStringExtra("PLAN_NAME");
+        measureFullPath = getIntent().getStringExtra("MEASURE_FULLPATH");
         Log.d(LogTAG,"Plan name: "+planName);
         PlanBundle planBundle = plansFileManager.getBundleByName(planName);
         File planfile = plansFileManager.getBundlePlanFile(planBundle);
         Log.d(LogTAG,"plan filepath: "+planfile.getAbsolutePath());
-        imageManipulationManager = new ImageManipulationManager();
-
-        buildingBitmap = BitmapFactory.decodeFile(planfile.getAbsolutePath());
-        buildingPlanImageView.setImageBitmap(buildingBitmap);
+        markupsImageManipulationManager = new ImageManipulationManager();
+        buildingPlanManipulationManager = new ImageManipulationManager();
+        buildingPlanManipulationManager.setBitmap(BitmapFactory.decodeFile(planfile.getAbsolutePath()));
+        buildingBitmap = buildingPlanManipulationManager.getBitmap();
+        px = buildingBitmap.getWidth()/2;
+        py = buildingBitmap.getHeight()/2;
+        //buildingPlanManipulationManager.setBitmap(buildingBitmap);
+        //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
         //measuresBitmap = Bitmap.createBitmap(buildingBitmap.getWidth(),buildingBitmap.getHeight(),Bitmap.Config.ARGB_8888);
-        imageManipulationManager.setBlankBitmap(buildingBitmap);
+        markupsImageManipulationManager.setBlankBitmap(buildingPlanManipulationManager.getBitmap());
+
         buildingPlanImageView.setEnabled(false);
         markupMeasuresImageView.setEnabled(false);
         scannerManagerInstance = MyWifiScannerManager.getInstance().init(getApplicationContext());
-        markupMeasuresImageView.setImageBitmap(imageManipulationManager.getBitmap());
+        markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
+        buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
         scannerManagerInstance.scan();
         mostRightButton = (Button) findViewById(R.id.mostRightButton);
-        //markupMeasuresImageView.setImageBitmap(measuresBitmap);
-        //BitmapFactory.decodeFile(planfile.getAbsolutePath());
-        //
-        //buildingPlanImageView.setImageBitmap(BitmapFactory.decodeFile(planfile.getAbsolutePath()));
 
 
-        //buildingPlanImageView.setImageDrawable();
 
     }
 
@@ -321,9 +354,14 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                 float orientation[] = new float[3];
                 SensorManager.getOrientation(R, orientation);
                 azimut = orientation[0]; // orientation contains: azimut, pitch and roll
-                degrees = (float)Math.toDegrees(azimut);
-                degrees +=180.f;
-                Log.d(LogTAG, String.format("azimuth: %f", degrees));
+                degrees = (float)Math.toDegrees(azimut)+180.f;
+                //degrees +=180.f;
+                if( !lockOrient) {
+                    //Log.d(LogTAG, String.format("azimuth: %f", degrees));
+
+                    rotateBuildingView(degrees,px,py);
+
+                }
 
             }
         }
@@ -341,4 +379,25 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
+    public void rotateBuildingView(float _degrees, float _px, float _py){
+        //Log.d(LogTAG, String.format("Rotating: %f %f %f",degrees, _px,_py ));
+        //markupsImageManipulationManager.rotate(_degrees,_px,_py);
+        //buildingPlanManipulationManager.rotate(_degrees,_px,_py);
+        Matrix rotateMatrix = new Matrix();
+        degressWithOffset = -_degrees+offset;
+        //rotateMatrix.setTranslate(_px,_py);
+        rotateMatrix.postRotate(degressWithOffset,_px,_py);
+
+        //rotateMatrix.preTranslate(_px,_py);
+
+        buildingPlanImageView.setImageMatrix(rotateMatrix);
+        markupMeasuresImageView.setImageMatrix(rotateMatrix);
+        //markupMeasuresImageView.setImageMatrix();
+        //markupMeasuresImageView.invalidate();
+        //buildingPlanImageView.invalidate();
+        //markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
+        //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
+
+    }
+
 }

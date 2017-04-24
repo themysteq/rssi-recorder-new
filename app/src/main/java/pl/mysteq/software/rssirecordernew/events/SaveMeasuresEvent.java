@@ -5,4 +5,9 @@ package pl.mysteq.software.rssirecordernew.events;
  */
 
 public class SaveMeasuresEvent {
+    public String fullpath;
+    public SaveMeasuresEvent(String fullpath){
+        this.fullpath = fullpath;
+    }
 }
+

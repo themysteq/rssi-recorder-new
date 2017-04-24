@@ -10,8 +10,10 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
 import java.util.ArrayList;
 
+import pl.mysteq.software.rssirecordernew.events.SaveMeasuresEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompleted;
 import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
@@ -29,6 +31,7 @@ public final class MyWifiScannerManager {
     private Context context;
     private WifiManager wifiManager;
     private WifiManager.WifiLock wifiLock;
+    boolean initialized = false;
 
     private ArrayList<MeasurePoint> measurePointArrayList = null;
     private static MyWifiScannerManager instance = null;
@@ -42,15 +45,22 @@ public final class MyWifiScannerManager {
         return instance;
     }
 
-    public MyWifiScannerManager init(Context _context){
+    public MyWifiScannerManager init(Context _context) {
+        //if(initialized) {
+        //   this.measurePointArrayList = new ArrayList<MeasurePoint>();
+        //  return this;
+        //}
         this.context = _context.getApplicationContext();
         this.measurePointArrayList = new ArrayList<MeasurePoint>();
         wifiManager = (WifiManager) context.getSystemService(WIFI_SERVICE);
         wifiManager.setWifiEnabled(true);
-        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_SCAN_ONLY,"RSSI_RECORDER_WIFI_LOCK");
+        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_SCAN_ONLY, "RSSI_RECORDER_WIFI_LOCK");
         wifiLock.acquire();
-        EventBus.getDefault().register(this);
+        if(! initialized) {
+            EventBus.getDefault().register(this);
+        }
         Log.d(LogTAG,"Initialized");
+        initialized = true;
         return instance;
     }
     public void stop(){
@@ -72,7 +82,7 @@ public final class MyWifiScannerManager {
 
         for(ScanResult scanResult : scanResults)
         {
-            Log.d(LogTAG,"scanResult: "+scanResult.toString());
+            //Log.d(LogTAG,"scanResult: "+scanResult.toString());
             lastScanResults.add(new CustomScanResult(scanResult));
 
         }
@@ -82,14 +92,39 @@ public final class MyWifiScannerManager {
         return lastScanResults;
     }
 
-    public MeasurePoint addMeasurePoint(ArrayList<CustomScanResult> list, Point point){
-        Log.d(LogTAG, String.format("add new measure: x: %d, y: %d", point.x,point.y));
+    public MeasurePoint addMeasurePoint(ArrayList<CustomScanResult> list, Point point,int rotation){
+        Log.d(LogTAG, String.format("add new measure: x: %d, y: %d, rotation: %d", point.x,point.y,rotation));
         MeasurePoint measurePoint = new MeasurePoint();
         measurePoint.scanResultArrayList =(ArrayList<CustomScanResult>) list.clone();
         measurePoint.set(point.x,point.y);
+        measurePoint.rotation = rotation;
         this.measurePointArrayList.add(measurePoint);
         return measurePoint;
     }
+    public void loadFromFile(File filepath){
+        JsonMeasuresReader reader = new JsonMeasuresReader();
+        reader.run(filepath);
+    }
+
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void OnMessage(SaveMeasuresEvent event){
+        saveToFile(new File(event.fullpath));
+    }
+    public void saveToFile(File filepath){
+        JsonMeasuresWriter writer = new JsonMeasuresWriter(this.measurePointArrayList,filepath);
+        writer.run();
+        Log.d(LogTAG,"saving "+filepath);
+    }
+    public void clear()
+    {
+        if(measurePointArrayList != null){
+            this.measurePointArrayList.clear();
+        }
+        else {
+            measurePointArrayList = new ArrayList<MeasurePoint>();
+        }
+    }
+
 
 
 }
