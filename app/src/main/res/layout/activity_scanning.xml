@@ -70,9 +70,8 @@
             android:password="false"
             android:scrollHorizontally="false"
             android:scrollbars="vertical"
-            android:text="TextView"
-            android:textAppearance="@style/AppTheme"
-            tools:text=" wywołał).  Zauważcie, że nie tworzę sobie typu Obliczenia, tylko od razu po stworzeniu wywołuję na nim metodę run(). Jest to spowodowane m.in. tym, że AsyncTask możemy wykonać tylko raz. Aby wykonać zadanie ponownie należy stworzyć kolejną instancję.  Kolejną ciekawostką jest użycie metody onCreateDialog(int dialogID). Dlaczego tak, zamiast po prostu dialog.show()? Otóż dialog.show() może doprowadzić do wycieków pamięci w przypadku, gdy Activity w tle zostanie niespodziewanie zamknięte. W ten sposób całą odpowiedzialność za ewentualne wycieki pamięci przejmuje za nas Android, a my mamy jedną rzecz mniej o którą możemy się martwić. Niestety według dokumentacji od API 13 jest to metoda przedawniona i zaleca się teraz stosowanie kalsy DialogFragment z FragmentManager. Jeszcze się z tym nie zapoznałem. Jak zobaczę o co chodzi, to napiszę odpowiedni artykuł i podlinkuję tutaj." />
+            android:text=" "
+            android:textAppearance="@style/AppTheme" />
 
         <SeekBar
             android:id="@+id/zoomSeekBar"
@@ -88,35 +87,38 @@
             android:layout_height="wrap_content">
 
             <Button
-                android:text="-- obrot"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:id="@+id/mostLeftButton"
-                android:layout_weight="1"
-                android:textSize="12sp" />
-
-            <Button
-                android:text="zapisz"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="-- obrot"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <Button
                 android:id="@+id/leftButton"
-                android:layout_weight="1"
-                android:textSize="12sp" />
-
-            <Button
-                android:text="usun"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="zapisz"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <Button
                 android:id="@+id/rightButton"
-                android:layout_weight="1"
-                android:textSize="12sp" />
-
-            <Button
-                android:text="obrot --"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/mostRightButton"
                 android:layout_weight="1"
+                android:text="usun"
+                android:textSize="12sp"
+                android:visibility="invisible" />
+
+            <Button
+                android:id="@+id/mostRightButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="lock rotation/calibrate"
                 android:textSize="12sp" />
 
         </LinearLayout>
