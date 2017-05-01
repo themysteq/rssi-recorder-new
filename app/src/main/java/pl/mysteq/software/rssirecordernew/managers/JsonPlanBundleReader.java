@@ -22,7 +22,7 @@ public class JsonPlanBundleReader {
     protected PlanBundle run(File bundleFile){
             Log.d(LogTAG, String.format("bundle file parsing: %s", bundleFile.getAbsolutePath()));
             PlanBundle planBundle = null;
-            try {
+         try {
                 //TODO: wywalic sleep'a
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

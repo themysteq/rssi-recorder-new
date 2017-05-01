@@ -20,12 +20,15 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import pl.mysteq.software.rssirecordernew.events.AddPlanEvent;
 import pl.mysteq.software.rssirecordernew.events.BundlesReloadedEvent;
 import pl.mysteq.software.rssirecordernew.events.CreateBundleEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadPlansEvent;
+import pl.mysteq.software.rssirecordernew.events.SaveBundleEvent;
+import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
 /**
@@ -41,6 +44,7 @@ public final class PlansFileManager {
 
     public static final String plan_interfix = ".plan";
     public static final String bundle_suffix = ".bundle.json";
+    public static final String measure_suffix = ".measure.json";
     public static final String external_storage_app_folder_name = "/rssi-recorder-new";
     public static final String bundles_subfolder_name = "/bundles";
     public static final String plans_subfolder_name = "/plans";
@@ -187,7 +191,7 @@ public final class PlansFileManager {
         }
     }
     */
-    @Subscribe(threadMode = ThreadMode.ASYNC)
+    @Subscribe(threadMode = ThreadMode.ASYNC,sticky = true)
     public void onMessage(ReloadBundlesEvent event){
         Log.d(LogTAG,"Received ReloadBundlesEvent");
         PlanBundle planBundle = null;
@@ -222,6 +226,59 @@ public final class PlansFileManager {
         EventBus.getDefault().post(new ReloadBundlesEvent());
 
     }
+
+    public PlanBundle getBundleByName(String name){
+        for (PlanBundle planBundle : this.bundlesContainerList)
+        {
+            if(planBundle.getPlanBundleName().equals(name))
+            {
+                return planBundle;
+            }
+        }
+        return null;
+    }
+    public File getBundlePlanFile(PlanBundle planBundle){
+        return new File(getAppExternalPlansFolder(),planBundle.getBuildingPlanFileName());
+    }
+
+
+public File generateNewMeasureFile(String _planBundleName){
+        String uuid = UUID.randomUUID().toString();
+        String filename = uuid+measure_suffix;
+        //PlanBundle _planBundle = null;
+        PlanBundle tempPlanBundle = null;
+        JsonPlanBundleReader jsonPlanBundleReader = new JsonPlanBundleReader();
+
+        File[] bundles = this.appExternalBundlesFolder.listFiles(this.bundleFilter);
+       // PlanBundle planBundle = null;
+        for (File bundle : bundles){
+            tempPlanBundle = jsonPlanBundleReader.run(bundle);
+            if(tempPlanBundle.getPlanBundleName().equals(_planBundleName)){
+                tempPlanBundle.addMeasureFilename(filename);
+                JsonPlanBundleWriter jsonPlanBundleWriter = new JsonPlanBundleWriter(tempPlanBundle,bundle);
+                jsonPlanBundleWriter.run();
+                File measureFile = new File(getAppExternalMeasuresFolder(),filename);
+                        JsonMeasuresWriter jsonMeasuresWriter = new JsonMeasuresWriter(new ArrayList<MeasurePoint>(),measureFile);
+
+                jsonMeasuresWriter.run();
+                return measureFile;
+            }
+        }
+        return null;
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void saveMeasures(ArrayList<MeasurePoint> measurePoints,String filename){
+        File fullPath = new File(getAppExternalMeasuresFolder(),filename);
+        JsonMeasuresWriter jsonMeasuresWriter = new JsonMeasuresWriter(measurePoints,fullPath);
+        jsonMeasuresWriter.run();
+        Log.d(LogTAG,"measures saved to: "+fullPath.getAbsolutePath());
+    }
+
+    public File getMeasureFile(String measureName){
+        return new File(getAppExternalMeasuresFolder(),measureName);
+    }
+
+
 
 
 

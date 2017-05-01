@@ -49,4 +49,7 @@ public class PlanBundle {
     public void setMeasuresFileNames(ArrayList<String> measuresFileNames) {
         this.measuresFileNames = measuresFileNames;
     }
+    public void addMeasureFilename(String filename){
+        this.measuresFileNames.add(filename);
+    }
 }
