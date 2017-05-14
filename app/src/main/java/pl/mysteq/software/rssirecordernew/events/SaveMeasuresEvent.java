@@ -6,8 +6,10 @@ package pl.mysteq.software.rssirecordernew.events;
 
 public class SaveMeasuresEvent {
     public String fullpath;
-    public SaveMeasuresEvent(String fullpath){
+    public String plan_name;
+    public SaveMeasuresEvent(String fullpath,String planName){
         this.fullpath = fullpath;
+        this.plan_name = planName;
     }
 }
 

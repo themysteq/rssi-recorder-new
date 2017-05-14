@@ -12,6 +12,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 
+import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
@@ -24,12 +25,15 @@ public class JsonMeasuresWriter {
 
     private ArrayList<MeasurePoint> measurePoints;
     private File measureFile;
+    private MeasureBundle measureBundle;
     // private ArrayList<String> measuresFiles;
 
-    public JsonMeasuresWriter(ArrayList<MeasurePoint> _measurePoints,File _measureFile ){
-        this.measurePoints = _measurePoints;
-        this.measureFile = _measureFile;
-        //this.measuresFiles = measuresFiles;
+    public JsonMeasuresWriter(MeasureBundle _measureBundle){
+        //this.measurePoints = _measureBundle.getMeasures();
+        //FIXME: this is bad and you should feel bad
+        this.measureFile = new File(PlansFileManager.getInstance().getAppExternalMeasuresFolder(),_measureBundle.getFilename());
+        this.measureBundle = _measureBundle;
+        // /this.measuresFiles = measuresFiles;
     }
 
     protected Void run(){
@@ -42,7 +46,7 @@ public class JsonMeasuresWriter {
                 Log.w(LogTAG,"Writing empty list");
             }
             */
-            gson.toJson(measurePoints,new TypeToken<List<MeasurePoint>>(){}.getType(),writer);
+            gson.toJson(measureBundle,new TypeToken<MeasureBundle>(){}.getType(),writer);
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();

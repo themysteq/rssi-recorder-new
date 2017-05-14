@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import pl.mysteq.software.rssirecordernew.events.SaveMeasuresEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompleted;
 import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
+import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 
 import static android.content.Context.WIFI_SERVICE;
@@ -108,10 +109,14 @@ public final class MyWifiScannerManager {
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SaveMeasuresEvent event){
-        saveToFile(new File(event.fullpath));
+        saveToFile(new File(event.fullpath),event.plan_name);
     }
-    public void saveToFile(File filepath){
-        JsonMeasuresWriter writer = new JsonMeasuresWriter(this.measurePointArrayList,filepath);
+
+    public void saveToFile(File filepath,String planName){
+
+        MeasureBundle measureBundle = new MeasureBundle(planName);
+        measureBundle.setMeasures(this.measurePointArrayList);
+        JsonMeasuresWriter writer = new JsonMeasuresWriter(measureBundle);
         writer.run();
         Log.d(LogTAG,"saving "+filepath);
     }

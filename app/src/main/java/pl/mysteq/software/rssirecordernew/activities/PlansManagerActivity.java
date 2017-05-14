@@ -136,7 +136,7 @@ public class PlansManagerActivity extends Activity {
     }
 
     //FIXME: do poprawki bo chyba nie ten tryb
-    @Subscribe(threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true)
     public void onMessage(BundlesReloadedEvent event){
         Log.d(LogTAG, "received BundlesReloadedEvent");
         Log.d(LogTAG,String.format("Bundles: %d",plansFileManager.getBundles().size()));

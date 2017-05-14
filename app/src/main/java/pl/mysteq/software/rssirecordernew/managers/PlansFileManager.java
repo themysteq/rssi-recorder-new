@@ -28,6 +28,7 @@ import pl.mysteq.software.rssirecordernew.events.CreateBundleEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadPlansEvent;
 import pl.mysteq.software.rssirecordernew.events.SaveBundleEvent;
+import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
@@ -242,9 +243,9 @@ public final class PlansFileManager {
     }
 
 
-public File generateNewMeasureFile(String _planBundleName){
-        String uuid = UUID.randomUUID().toString();
-        String filename = uuid+measure_suffix;
+public MeasureBundle generateNewMeasureBundle(String _planBundleName){
+       // String uuid = UUID.randomUUID().toString();
+       // String filename = uuid+measure_suffix;
         //PlanBundle _planBundle = null;
         PlanBundle tempPlanBundle = null;
         JsonPlanBundleReader jsonPlanBundleReader = new JsonPlanBundleReader();
@@ -254,24 +255,28 @@ public File generateNewMeasureFile(String _planBundleName){
         for (File bundle : bundles){
             tempPlanBundle = jsonPlanBundleReader.run(bundle);
             if(tempPlanBundle.getPlanBundleName().equals(_planBundleName)){
-                tempPlanBundle.addMeasureFilename(filename);
+                MeasureBundle measureBundle = new MeasureBundle(_planBundleName);
+                //tempPlanBundle.addMeasureFilename(filename);
+                tempPlanBundle.addMeasureFilename(measureBundle.getFilename());
                 JsonPlanBundleWriter jsonPlanBundleWriter = new JsonPlanBundleWriter(tempPlanBundle,bundle);
                 jsonPlanBundleWriter.run();
-                File measureFile = new File(getAppExternalMeasuresFolder(),filename);
-                        JsonMeasuresWriter jsonMeasuresWriter = new JsonMeasuresWriter(new ArrayList<MeasurePoint>(),measureFile);
-
+                //File measureFile = new File(getAppExternalMeasuresFolder(),filename);
+                JsonMeasuresWriter jsonMeasuresWriter = new JsonMeasuresWriter(measureBundle);
                 jsonMeasuresWriter.run();
-                return measureFile;
+
+                return measureBundle;
             }
         }
         return null;
     }
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void saveMeasures(ArrayList<MeasurePoint> measurePoints,String filename){
-        File fullPath = new File(getAppExternalMeasuresFolder(),filename);
-        JsonMeasuresWriter jsonMeasuresWriter = new JsonMeasuresWriter(measurePoints,fullPath);
-        jsonMeasuresWriter.run();
-        Log.d(LogTAG,"measures saved to: "+fullPath.getAbsolutePath());
+       Log.d(LogTAG,"Saving measures!: ");
+        throw new RuntimeException("saving measures via old method!");
+        //File fullPath = new File(getAppExternalMeasuresFolder(),filename);
+       // JsonMeasuresWriter jsonMeasuresWriter = new JsonMeasuresWriter(measurePoints,fullPath);
+      //  jsonMeasuresWriter.run();
+       // Log.d(LogTAG,"measures saved to: "+fullPath.getAbsolutePath());
     }
 
     public File getMeasureFile(String measureName){

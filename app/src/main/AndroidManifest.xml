@@ -26,8 +26,10 @@
             </intent-filter>
         </activity>
         <activity android:name=".activities.PlansManagerActivity" />
-        <activity android:name=".activities.ScanningActivity"
-            android:screenOrientation="portrait"/>
+        <activity
+            android:name=".activities.ScanningActivity"
+            android:screenOrientation="portrait" />
+        <activity android:name=".activities.MeasuresActivity"></activity>
     </application>
 
 </manifest>

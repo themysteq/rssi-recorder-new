@@ -23,6 +23,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
+import android.widget.TextView;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -59,10 +60,11 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     };
     float[] mGravity;
     float[] mGeomagnetic;
-    static final float alpha = 0.15f;
+    static final float alpha = 0.5f;
     float azimut;
     float degrees;
     float degressWithOffset = 0;
+    float lockedDegree = 0;
     float px,py;
     float offset = 0;
     Bitmap buildingBitmap = null;
@@ -83,6 +85,10 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     Button mostRightButton = null;
     Canvas measuresCanvas = null;
     String measureFullPath = null;
+
+    TextView degreesTextView = null;
+    TextView offsetTextView = null;
+
     boolean lockOrient = true;
 
     @Override
@@ -97,19 +103,21 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
 
 
-
+        mostRightButton.setEnabled(false);
+/*
         mostRightButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if(lockOrient )
                 {
-                    offset = degrees;
+                    //offset = degrees;
                 }
                 lockOrient = ! lockOrient;
                // mostRightButton.setEnabled(!mostRightButton.isEnabled());
+                Log.d(LogTAG, String.format("degrees with offset: %f | offset: %f", degressWithOffset,offset));
             }
         });
-
+*/
 
         zoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -151,8 +159,11 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     scannerManagerInstance.scan();
                     Point pointOnView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages),e );
                     Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView,pointOnView);
-                    px = pointOnImage.x;
-                    py = pointOnImage.y;
+                    px = (buildingPlanImageView.getScrollX()+buildingPlanImageView.getWidth()/(2*buildingPlanImageView.getScaleX()));
+                    py = (buildingPlanImageView.getScrollY()+buildingPlanImageView.getHeight())/(2*buildingPlanImageView.getScaleY());
+                    //Log.d(LogTAG, String.format("px: %d, py: %d", px,py));
+                    //px = pointOnImage.x;
+                    //py = pointOnImage.y;
                     Log.d(LogTAG, String.format("px: %f, py: %f", px,py));
                     return true;
                    // return super.onSingleTapConfirmed(e);
@@ -241,7 +252,12 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     @Override
     protected void onStart() {
         super.onStart();
-        EventBus.getDefault().register(this);
+        try {
+            EventBus.getDefault().register(this);
+        }
+        catch (org.greenrobot.eventbus.EventBusException ex){
+            Log.w(LogTAG,"OOoops. "+ex.getMessage());
+        }
         //String planName = getIntent().getStringExtra("PLAN_NAME");
         //plansFileManager.generateNewMeasureFile()
     }
@@ -251,7 +267,13 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         super.onResume();
         mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
         mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
-        registerReceiver(broadcast,filter);
+        try {
+            registerReceiver(broadcast,filter);
+        }
+        catch (org.greenrobot.eventbus.EventBusException ex){
+            Log.w(LogTAG,"OOoops. "+ex.getMessage());
+        }
+
 
 
     }
@@ -273,7 +295,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
             Log.w(LogTAG,"BroadcastReceiver already unregistered");
         }
 
-        scannerManagerInstance.saveToFile(new File(measureFullPath));
+        scannerManagerInstance.saveToFile(new File(measureFullPath),planName);
         scannerManagerInstance.stop();
         Log.d(LogTAG,"calling onStop");
         super.onStop();
@@ -301,8 +323,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         buildingPlanManipulationManager = new ImageManipulationManager();
         buildingPlanManipulationManager.setBitmap(BitmapFactory.decodeFile(planfile.getAbsolutePath()));
         buildingBitmap = buildingPlanManipulationManager.getBitmap();
-        px = buildingBitmap.getWidth()/2;
-        py = buildingBitmap.getHeight()/2;
+        px = (buildingPlanImageView.getScrollX()+buildingPlanImageView.getWidth()/(2*buildingPlanImageView.getScaleX()));
+        py = (buildingPlanImageView.getScrollY()+buildingPlanImageView.getHeight())/(2*buildingPlanImageView.getScaleY());
         //buildingPlanManipulationManager.setBitmap(buildingBitmap);
         //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
         //measuresBitmap = Bitmap.createBitmap(buildingBitmap.getWidth(),buildingBitmap.getHeight(),Bitmap.Config.ARGB_8888);
@@ -315,6 +337,9 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
         scannerManagerInstance.scan();
         mostRightButton = (Button) findViewById(R.id.mostRightButton);
+
+        degreesTextView = (TextView) findViewById(R.id.degreesTextView);
+        offsetTextView = (TextView) findViewById(R.id.offsetTextView);
 
 
 
@@ -354,17 +379,29 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                 float orientation[] = new float[3];
                 SensorManager.getOrientation(R, orientation);
                 azimut = orientation[0]; // orientation contains: azimut, pitch and roll
-                degrees = (float)Math.toDegrees(azimut)+180.f;
+                degrees = ((float)Math.toDegrees(azimut)+180.f);
                 //degrees +=180.f;
+                //
+                lockedDegree = -degrees-offset;
                 if( !lockOrient) {
                     //Log.d(LogTAG, String.format("azimuth: %f", degrees));
-
-                    rotateBuildingView(degrees,px,py);
+                    degressWithOffset = (-degrees-offset );
+                    rotateBuildingView(degressWithOffset,px,py);
 
                 }
+                else{
+                    offset = degressWithOffset + lockedDegree;
+                }
+
 
             }
+
+
         }
+
+        degreesTextView.setText(String.format("%.2f",degressWithOffset));
+        offsetTextView.setText(String.format("%.2f",lockedDegree));
+
         //mCustomDrawableView.invalidate();
     }
     protected float[] lowPass( float[] input, float[] output ) {
@@ -379,14 +416,14 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
-    public void rotateBuildingView(float _degrees, float _px, float _py){
+    public void rotateBuildingView(float _degreesWithOffset, float _px, float _py){
         //Log.d(LogTAG, String.format("Rotating: %f %f %f",degrees, _px,_py ));
         //markupsImageManipulationManager.rotate(_degrees,_px,_py);
         //buildingPlanManipulationManager.rotate(_degrees,_px,_py);
         Matrix rotateMatrix = new Matrix();
-        degressWithOffset = -_degrees+offset;
+        //degressWithOffset = -_degrees+offset;
         //rotateMatrix.setTranslate(_px,_py);
-        rotateMatrix.postRotate(degressWithOffset,_px,_py);
+        rotateMatrix.postRotate(_degreesWithOffset,_px,_py);
 
         //rotateMatrix.preTranslate(_px,_py);
 
