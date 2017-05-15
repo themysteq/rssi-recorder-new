@@ -24,7 +24,6 @@ import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
 import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 
 import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
-import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.measure_suffix;
 import static pl.mysteq.software.rssirecordernew.structures.PlanBundle.SELECTED_PLANBUNDLE_KEY;
 
 public class MainActivity extends Activity {
@@ -96,7 +95,7 @@ public class MainActivity extends Activity {
                         Toast.makeText(v.getContext(),"Can't create measure. Aborting", Toast.LENGTH_LONG).show();
                         return;
                     }
-                    File measureFile = new File(measureBundle.getFilename());
+                    File measureFile = new File(measureBundle.getFilepath());
                  //   File measureFile = plansFileManager.generateNewMeasureFile(selectedBundle);
 
                     newMeasureIntent.putExtra("PLAN_NAME",selectedBundle);

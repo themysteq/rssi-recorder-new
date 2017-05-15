@@ -1,7 +1,6 @@
 package pl.mysteq.software.rssirecordernew.managers;
 
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
 
 import org.greenrobot.eventbus.EventBus;
@@ -9,25 +8,13 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.channels.FileChannel;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.UUID;
 
 import pl.mysteq.software.rssirecordernew.events.AddPlanEvent;
 import pl.mysteq.software.rssirecordernew.events.BundlesReloadedEvent;
 import pl.mysteq.software.rssirecordernew.events.CreateBundleEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
-import pl.mysteq.software.rssirecordernew.events.ReloadPlansEvent;
-import pl.mysteq.software.rssirecordernew.events.SaveBundleEvent;
 import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
@@ -245,7 +232,7 @@ public final class PlansFileManager {
 
 public MeasureBundle generateNewMeasureBundle(String _planBundleName){
        // String uuid = UUID.randomUUID().toString();
-       // String filename = uuid+measure_suffix;
+       // String filepath = uuid+measure_suffix;
         //PlanBundle _planBundle = null;
         PlanBundle tempPlanBundle = null;
         JsonPlanBundleReader jsonPlanBundleReader = new JsonPlanBundleReader();
@@ -256,11 +243,11 @@ public MeasureBundle generateNewMeasureBundle(String _planBundleName){
             tempPlanBundle = jsonPlanBundleReader.run(bundle);
             if(tempPlanBundle.getPlanBundleName().equals(_planBundleName)){
                 MeasureBundle measureBundle = new MeasureBundle(_planBundleName);
-                //tempPlanBundle.addMeasureFilename(filename);
-                tempPlanBundle.addMeasureFilename(measureBundle.getFilename());
+                //tempPlanBundle.addMeasureFilename(filepath);
+                tempPlanBundle.addMeasureFilename(measureBundle.getFilepath());
                 JsonPlanBundleWriter jsonPlanBundleWriter = new JsonPlanBundleWriter(tempPlanBundle,bundle);
                 jsonPlanBundleWriter.run();
-                //File measureFile = new File(getAppExternalMeasuresFolder(),filename);
+                //File measureFile = new File(getAppExternalMeasuresFolder(),filepath);
                 JsonMeasuresWriter jsonMeasuresWriter = new JsonMeasuresWriter(measureBundle);
                 jsonMeasuresWriter.run();
 
@@ -273,7 +260,7 @@ public MeasureBundle generateNewMeasureBundle(String _planBundleName){
     public void saveMeasures(ArrayList<MeasurePoint> measurePoints,String filename){
        Log.d(LogTAG,"Saving measures!: ");
         throw new RuntimeException("saving measures via old method!");
-        //File fullPath = new File(getAppExternalMeasuresFolder(),filename);
+        //File fullPath = new File(getAppExternalMeasuresFolder(),filepath);
        // JsonMeasuresWriter jsonMeasuresWriter = new JsonMeasuresWriter(measurePoints,fullPath);
       //  jsonMeasuresWriter.run();
        // Log.d(LogTAG,"measures saved to: "+fullPath.getAbsolutePath());

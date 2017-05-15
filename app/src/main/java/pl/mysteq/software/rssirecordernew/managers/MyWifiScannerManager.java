@@ -114,11 +114,19 @@ public final class MyWifiScannerManager {
 
     public void saveToFile(File filepath,String planName){
 
+
         MeasureBundle measureBundle = new MeasureBundle(planName);
         measureBundle.setMeasures(this.measurePointArrayList);
         JsonMeasuresWriter writer = new JsonMeasuresWriter(measureBundle);
         writer.run();
         Log.d(LogTAG,"saving "+filepath);
+    }
+    public void saveToFile(MeasureBundle measureBundle)
+    {
+        measureBundle.setMeasures(this.measurePointArrayList);
+        JsonMeasuresWriter writer = new JsonMeasuresWriter(measureBundle);
+        writer.run();
+        Log.d(LogTAG,"saved "+measureBundle.getFilepath());
     }
     public void clear()
     {

@@ -5,7 +5,6 @@ import android.util.Log;
 import com.google.gson.annotations.SerializedName;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -30,8 +29,8 @@ public class MeasureBundle {
     @SerializedName("measures")
     public ArrayList<MeasurePoint> measures;
 
-    @SerializedName("filename")
-    public String filename;
+    @SerializedName("filepath")
+    public String filepath;
 
     @SerializedName("for_plan")
     public String forPlan;
@@ -40,19 +39,27 @@ public class MeasureBundle {
         this.forPlan = forPlanName;
         this.uuid = UUID.randomUUID().toString();
         measures = new ArrayList<MeasurePoint>();
-        filename = uuid+filename_suffix;
+        filepath = uuid+filename_suffix;
     }
 
     public ArrayList<MeasurePoint> getMeasures() {
         return measures;
     }
 
-    public String getFilename() {
-        return filename;
+    public String getFilepath() {
+        return filepath;
     }
 
     public String getUuid() {
         return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    public void setFilepath(String filepath) {
+        this.filepath = filepath;
     }
 
     public void setMeasures(ArrayList<MeasurePoint> measures) {

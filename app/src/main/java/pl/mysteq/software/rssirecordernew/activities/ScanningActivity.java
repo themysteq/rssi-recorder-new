@@ -37,6 +37,7 @@ import pl.mysteq.software.rssirecordernew.managers.ImageManipulationManager;
 import pl.mysteq.software.rssirecordernew.managers.MyWifiScannerManager;
 import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
 import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
+import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
 public class ScanningActivity extends Activity implements SensorEventListener {
@@ -72,6 +73,9 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     MyWifiScannerManager scannerManagerInstance = null;
     PlansFileManager plansFileManager = null;
     String planName = null;
+    String measureUUID = null;
+    String measureName = null;
+    MeasureBundle measureBundle = null;
     ArrayList<CustomScanResult> customScanResults;
 
     SensorManager mSensorManager ;
@@ -295,7 +299,10 @@ public class ScanningActivity extends Activity implements SensorEventListener {
             Log.w(LogTAG,"BroadcastReceiver already unregistered");
         }
 
-        scannerManagerInstance.saveToFile(new File(measureFullPath),planName);
+        Log.d(LogTAG,"scannerManagerInstance.saveToFile : "+measureBundle.getFilepath());
+        //scannerManagerInstance.saveToFile(new File(measureFullPath),planName);
+        //measureBundle.setMeasures();
+        scannerManagerInstance.saveToFile(measureBundle); // FIXME
         scannerManagerInstance.stop();
         Log.d(LogTAG,"calling onStop");
         super.onStop();
@@ -315,7 +322,12 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         plansFileManager = PlansFileManager.getInstance();
         planName = getIntent().getStringExtra("PLAN_NAME");
         measureFullPath = getIntent().getStringExtra("MEASURE_FULLPATH");
+        measureUUID = getIntent().getStringExtra("MEASURE_UUID");
+        measureName = getIntent().getStringExtra("MEASURE_NAME");
         Log.d(LogTAG,"Plan name: "+planName);
+        measureBundle = new MeasureBundle(planName);
+        measureBundle.setUuid(measureUUID);
+        measureBundle.setFilepath(measureFullPath);
         PlanBundle planBundle = plansFileManager.getBundleByName(planName);
         File planfile = plansFileManager.getBundlePlanFile(planBundle);
         Log.d(LogTAG,"plan filepath: "+planfile.getAbsolutePath());
