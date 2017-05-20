@@ -225,6 +225,9 @@ public final class PlansFileManager {
         }
         return null;
     }
+    public ArrayList<PlanBundle> getAllBundles(){
+        return this.bundlesContainerList;
+    }
     public File getBundlePlanFile(PlanBundle planBundle){
         return new File(getAppExternalPlansFolder(),planBundle.getBuildingPlanFileName());
     }

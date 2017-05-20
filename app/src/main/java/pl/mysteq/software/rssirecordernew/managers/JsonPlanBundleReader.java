@@ -19,7 +19,7 @@ import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 public class JsonPlanBundleReader {
     private static final String LogTAG = "JsonPlanBundleReader";
 
-    protected PlanBundle run(File bundleFile){
+    public PlanBundle run(File bundleFile){
             Log.d(LogTAG, String.format("bundle file parsing: %s", bundleFile.getAbsolutePath()));
             PlanBundle planBundle = null;
          try {
