@@ -60,9 +60,9 @@ public final class PlansFileManager {
     private File appExternalPlansFolder = null;
     private File appExternalMeasuresFolder = null;
 
-    private FilenameFilter bundleFilter = null;
-    private FilenameFilter planFilter = null;
-    private FilenameFilter measureFilter = null;
+    public FilenameFilter bundleFilter = null;
+    public FilenameFilter planFilter = null;
+    public FilenameFilter measureFilter = null;
 
     protected ArrayList<PlanBundle> bundlesContainerList = null;
 

@@ -104,7 +104,9 @@ public final class MyWifiScannerManager {
     }
     public void loadFromFile(File filepath){
         JsonMeasuresReader reader = new JsonMeasuresReader();
-        reader.run(filepath);
+        MeasureBundle _measureBundle = reader.run(filepath);
+       // ArrayList<MeasurePoint> measures =
+        measurePointArrayList = _measureBundle.getMeasures();
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -124,6 +126,7 @@ public final class MyWifiScannerManager {
     public void saveToFile(MeasureBundle measureBundle)
     {
         measureBundle.setMeasures(this.measurePointArrayList);
+        //measureBundle.setLastChanged();
         JsonMeasuresWriter writer = new JsonMeasuresWriter(measureBundle);
         writer.run();
         Log.d(LogTAG,"saved "+measureBundle.getFilepath());
@@ -138,6 +141,10 @@ public final class MyWifiScannerManager {
         }
     }
 
-
-
+    public ArrayList<MeasurePoint> getMeasurePointArrayList() {
+        return measurePointArrayList;
+    }
+    public int getSize(){
+        return measurePointArrayList.size();
+    }
 }

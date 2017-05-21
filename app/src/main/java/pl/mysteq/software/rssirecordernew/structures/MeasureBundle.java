@@ -7,6 +7,7 @@ import com.google.gson.annotations.SerializedName;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -35,6 +36,9 @@ public class MeasureBundle {
     @SerializedName("for_plan")
     public String forPlan;
 
+    @SerializedName("last_changed")
+    public Date lastChanged;
+
     public MeasureBundle(String forPlanName){
         this.forPlan = forPlanName;
         this.uuid = UUID.randomUUID().toString();
@@ -54,12 +58,20 @@ public class MeasureBundle {
         return uuid;
     }
 
+    public Date getLastChanged() {
+        return lastChanged;
+    }
+
     public void setUuid(String uuid) {
         this.uuid = uuid;
     }
 
     public void setFilepath(String filepath) {
         this.filepath = filepath;
+    }
+
+    public void setLastChanged(Date lastChanged) {
+        this.lastChanged = lastChanged;
     }
 
     public void setMeasures(ArrayList<MeasurePoint> measures) {

@@ -3,6 +3,8 @@ package pl.mysteq.software.rssirecordernew.activities;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -52,8 +54,20 @@ public class MeasuresActivity extends Activity {
 
         arrayAdapter = new MeasuresArrayAdapter(this,this.measureBundles);
         measuresListView.setAdapter(arrayAdapter);
+       // EventBus.getDefault().post(new ReloadBundlesEvent());
         EventBus.getDefault().post(new ReloadMeasuresEvent(planName));
 
+        measuresListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Log.d(LogTAG, String.format("clicked item: %d, id: %d",position,id));
+                MeasureBundle item = (MeasureBundle) parent.getItemAtPosition(position);
+                Log.d(LogTAG,"selected name: "+item.getUuid());
+
+                setResult(Activity.RESULT_OK,getIntent().putExtra("MEASURE_UUID",item.getUuid()));
+                finish();
+            }
+        });
 
 
     }
@@ -89,6 +103,7 @@ public class MeasuresActivity extends Activity {
        // PlanBundle planBundle =  jsonPlanBundleReader.run(new File(PlansFileManager.getInstance().getAppExternalBundlesFolder(),planName));
        ArrayList<PlanBundle> bundles =  PlansFileManager.getInstance().getAllBundles();
         PlanBundle selected_bundle = null;
+        Log.d(LogTAG,"selected measure: "+event.plan_name);
         for (PlanBundle single_bundle : bundles)
         {
             if(single_bundle.getPlanBundleName().equals(event.plan_name)){
@@ -101,7 +116,8 @@ public class MeasuresActivity extends Activity {
             MeasureBundle measureBundle = jsonMeasuresReader.run(new File(PlansFileManager.getInstance().getAppExternalMeasuresFolder(),measureName));
             _measureBundles.add(measureBundle);
         }
-        this.measureBundles = _measureBundles;
+        this.measureBundles.clear();
+        this.measureBundles.addAll(_measureBundles);
        // this.measureBundles.addAll(_measureBundles);
         //EventBus.getDefault().post(new MeasuresReloadedEvent());
 
@@ -114,9 +130,14 @@ public class MeasuresActivity extends Activity {
         Log.d(LogTAG,"measures per plan: "+this.measureBundles.size());
         Log.d(LogTAG,"notifyDataSetChanged");
 
-        arrayAdapter = new MeasuresArrayAdapter(this,this.measureBundles);
+        //arrayAdapter = new MeasuresArrayAdapter(this,this.measureBundles);
+       // arrayAdapter.notifyDataSetChanged();
+       // arrayAdapter.clear();
+       // arrayAdapter.addAll(this.measureBundles);
+        //arrayAdapter.notifyAll();
+        //measuresListView.invalidate();
         arrayAdapter.notifyDataSetChanged();
-        measuresListView.setAdapter(arrayAdapter);
+       // measuresListView.setAdapter(arrayAdapter);
     }
 
     //@Subscribe(threadMode = ThreadMode.MAIN)

@@ -9,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -27,28 +29,33 @@ public class MeasuresArrayAdapter extends ArrayAdapter {
     private static final String LogTAG = "MeasuresArrayAdapter";
     //private ArrayList<MeasurePoint> items;
     public MeasuresArrayAdapter(Context context, ArrayList<MeasureBundle> measureBundles) {
-        super(context,0 ,measureBundles);
-        Log.d(LogTAG,"items: "+measureBundles.size());
-        this.items = measureBundles;
+        super(context,0,measureBundles);
+        Log.d(LogTAG,"items for adapter: "+measureBundles.size());
+       // this.items = measureBundles;
     }
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         // return super.getView(position, convertView, parent);
-
+            Log.d(LogTAG,"getView called");
         //ArrayList<MeasurePoint> measuresPoint = items.get(position);
-        MeasureBundle measureBundle = items.get(position);
+        MeasureBundle measureBundle = (MeasureBundle) getItem(position);
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.measures_list_item, parent, false);
         }
         TextView measuresNameTextView = (TextView) convertView.findViewById(R.id.nameTextView);
         TextView measuresTextView = (TextView) convertView.findViewById(R.id.countTextView);
+        TextView dateTextView = (TextView) convertView.findViewById(R.id.dateTextView);
         //TextView planImageTextView = (TextView) convertView.findViewById(R.id.planImageTextView);
 
 
         measuresNameTextView.setText(measureBundle.getUuid());
         Log.d(LogTAG,"measuresNameTextView: "+measureBundle.getUuid());
         measuresTextView.setText(String.format("%d", measureBundle.getMeasures().size()));
+        SimpleDateFormat fmtOut = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        //DateFormat dateFormat = android.text.format.DateFormat.getTimeFormat(parent.getContext());
+
+        dateTextView.setText(fmtOut.format(measureBundle.getLastChanged()));
 
        // measuresNameTextView.setText(planBundle.getPlanBundleName());
         //measuresNameTextView.setText("HEHEHE");

@@ -22,12 +22,12 @@ public class JsonPlanBundleReader {
     public PlanBundle run(File bundleFile){
             Log.d(LogTAG, String.format("bundle file parsing: %s", bundleFile.getAbsolutePath()));
             PlanBundle planBundle = null;
-         try {
-                //TODO: wywalic sleep'a
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        // try {
+      //         //TODO: wywalic sleep'a
+               // Thread.sleep(1000);
+           // } catch (InterruptedException e) {
+          //      e.printStackTrace();
+          //  }
             try {
                 Reader reader = new FileReader(bundleFile);
                 Gson gson = new Gson();

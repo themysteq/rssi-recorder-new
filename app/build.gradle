@@ -10,6 +10,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -32,5 +33,7 @@ dependencies {
     //  compile 'com.github.bumptech.glide:glide:3.7.0'
     //   compile 'com.github.esafirm.android-image-picker:imagepicker:1.5.0'
     compile 'com.github.angads25:filepicker:1.1.0'
+    compile 'com.jakewharton:butterknife:8.6.0'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.6.0'
 
 }

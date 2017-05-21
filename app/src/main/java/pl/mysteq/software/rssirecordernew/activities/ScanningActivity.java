@@ -1,6 +1,7 @@
 package pl.mysteq.software.rssirecordernew.activities;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -30,14 +31,17 @@ import org.greenrobot.eventbus.Subscribe;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Date;
 
 import pl.mysteq.software.rssirecordernew.R;
+import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompleted;
 import pl.mysteq.software.rssirecordernew.managers.ImageManipulationManager;
 import pl.mysteq.software.rssirecordernew.managers.MyWifiScannerManager;
 import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
 import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
 import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
+import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
 public class ScanningActivity extends Activity implements SensorEventListener {
@@ -94,6 +98,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     TextView offsetTextView = null;
 
     boolean lockOrient = true;
+    ProgressDialog progressDialog = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,11 +108,30 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
+
         //bindings
 
 
 
         mostRightButton.setEnabled(false);
+
+        scannerManagerInstance.loadFromFile(new File(PlansFileManager.getInstance().getAppExternalMeasuresFolder(),measureFullPath));
+        ArrayList<MeasurePoint> measurePointArrayList = scannerManagerInstance.getMeasurePointArrayList();
+        if (measurePointArrayList.size() > 0) {
+            for (MeasurePoint measurePoint : measurePointArrayList)
+            {
+                markupsImageManipulationManager.drawPoint(measurePoint);
+
+            }
+            markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
+            Log.d(LogTAG,"Drawing points done");
+        }
+        else
+        {
+            Log.i(LogTAG,"Empty measure file when loading");
+        }
+        progressDialog.dismiss();
+        //
 /*
         mostRightButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -302,8 +326,10 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         Log.d(LogTAG,"scannerManagerInstance.saveToFile : "+measureBundle.getFilepath());
         //scannerManagerInstance.saveToFile(new File(measureFullPath),planName);
         //measureBundle.setMeasures();
+        measureBundle.setLastChanged(new Date());
         scannerManagerInstance.saveToFile(measureBundle); // FIXME
         scannerManagerInstance.stop();
+        EventBus.getDefault().post(new ReloadBundlesEvent());
         Log.d(LogTAG,"calling onStop");
         super.onStop();
 
@@ -352,6 +378,12 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
         degreesTextView = (TextView) findViewById(R.id.degreesTextView);
         offsetTextView = (TextView) findViewById(R.id.offsetTextView);
+
+        progressDialog = new ProgressDialog(this,ProgressDialog.STYLE_SPINNER);
+        progressDialog.setMessage("Loading...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
 
 
 
