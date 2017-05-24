@@ -66,7 +66,7 @@ public class SynchronizerActivity extends Activity {
         else editText.setText("@NONE@");
     }
 
-    @Subscribe
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void syncBundlesDone(SyncBundlesDoneEvent event){
         if(event.bundles != null) editText.setText(event.bundles);
         else editText.setText("@NONE@");

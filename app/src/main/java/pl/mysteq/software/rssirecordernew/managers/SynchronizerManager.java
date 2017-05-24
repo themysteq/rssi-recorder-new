@@ -1,6 +1,7 @@
 package pl.mysteq.software.rssirecordernew.managers;
 
 import android.app.DownloadManager;
+import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
 
@@ -12,9 +13,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.MultipartBody;
 import pl.mysteq.software.rssirecordernew.events.PlansReloadedEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesEvent;
@@ -46,6 +50,7 @@ public class SynchronizerManager {
     private File appExternalSynchronizerPlansFolder = null;
     private File appExternalSynchronizerBundlesFolder = null;
     private File appExternalSynchronizerMeasuresFolder = null;
+    private OkHttpClient okHttpClient = null;
 
 
     public SynchronizerManager(){
@@ -55,6 +60,7 @@ public class SynchronizerManager {
         appExternalSynchronizerMeasuresFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_measures_subfolder_name);
         appExternalSynchronizerPlansFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_plans_subfolder_name);
         EventBus.getDefault().register(this);
+        okHttpClient = new OkHttpClient();
 
     }
     private static synchronized SynchronizerManager getSync(){
@@ -100,7 +106,8 @@ public class SynchronizerManager {
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SyncBundlesEvent event){
-        Log.d(LogTAG,"SyncBundlesEvent received");
+
+      /*  Log.d(LogTAG,"SyncBundlesEvent received");
         ArrayList<PlanBundle> planBundles = PlansFileManager.getInstance().getAllBundles();
         ArrayList<String> names = new ArrayList<String>();
         OkHttpClient okHttpClient = new OkHttpClient();
@@ -116,7 +123,9 @@ public class SynchronizerManager {
         //
         //}
             EventBus.getDefault().post(new SyncBundlesDoneEvent(bundlesJSON));
-
+*/
+      Log.d(LogTAG,"SyncBundlesEvent received");
+      syncBundlesWithServer();
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -127,7 +136,7 @@ public class SynchronizerManager {
     public void syncPlansWithServer(){
         File plansDir = PlansFileManager.getInstance().getAppExternalPlansFolder();
         File[] plans = plansDir.listFiles(PlansFileManager.getInstance().planFilter);
-        OkHttpClient okHttpClient = new OkHttpClient();
+
         Request request = new Request.Builder().url(serverURL+"/plans").build();
         String plansJSON = null;
 
@@ -149,10 +158,49 @@ public class SynchronizerManager {
         EventBus.getDefault().post(new SyncPlansDoneEvent(plansJSON));
     }
 
-    /*
+
     public void syncBundlesWithServer() {
+        File bundlesDir = PlansFileManager.getInstance().getAppExternalBundlesFolder();
+        File[] bundles = bundlesDir.listFiles(PlansFileManager.getInstance().bundleFilter);
+
+        Request request = new Request.Builder().url(serverURL+"/bundles").build();
+        String bundlesJSON = null;
+        ArrayList<String> bundles_missing_in_app = new ArrayList<>();
+        ArrayList<String> bundles_missin_in_server = new ArrayList<>();
+        try {
+            Response response = okHttpClient.newCall(request).execute();
+            bundlesJSON  = response.body().string();
+            Log.d(LogTAG,"bundlesJSON:");
+            Log.d(LogTAG,bundlesJSON);
+        } catch (java.net.ConnectException e){
+            Log.e(LogTAG, e.getMessage());
+            Log.e(LogTAG,"can't connect");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        for (File bundle : bundles){
+            Log.d(LogTAG,"bundle: "+bundle.getName());
+            RequestBody requestBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", bundle.getName(),
+                            RequestBody.create(MediaType.parse("application/json"), bundle))
+                    .build();
+            Request uploadRequest = new Request.Builder()
+                    .url(serverURL+"/bundles")
+                    .post(requestBody)
+                    .build();
+            try {
+                Response uploadResponse = okHttpClient.newCall(uploadRequest).execute();
+                Log.d(LogTAG, uploadResponse.body().string());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        EventBus.getDefault().post(new SyncBundlesDoneEvent(bundlesJSON));
 
     }
+    /*
 
     public void syncMeasuresWithServer() {
 
