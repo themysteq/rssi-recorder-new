@@ -1,6 +1,7 @@
 package pl.mysteq.software.rssirecordernew.activities;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -22,11 +23,17 @@ import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansDoneEvent
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansEvent;
 import pl.mysteq.software.rssirecordernew.managers.SynchronizerManager;
 
+import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
+
 public class SynchronizerActivity extends Activity {
 
     private static final String LogTAG = "SynchronizerActivity";
 
     public SynchronizerManager synchronizerManagerInstance;
+
+    SharedPreferences sharedPreferences = null;
+    String hostname = null;
+    Integer port = null;
 
     @BindView(R.id.editText) EditText editText;
 
@@ -37,6 +44,9 @@ public class SynchronizerActivity extends Activity {
         synchronizerManagerInstance = SynchronizerManager.getInstance();
         ButterKnife.bind(this);
         EventBus.getDefault().register(this);
+        sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
+        hostname = sharedPreferences.getString("SYNC_HOSTNAME","localhost");
+        port = sharedPreferences.getInt("SYNC_PORT",80);
 
     }
 
@@ -47,18 +57,18 @@ public class SynchronizerActivity extends Activity {
 
     @OnClick(R.id.synchronizeBundlesButton) void syncBundles(){
         Log.d(LogTAG,"syncBundles()");
-        EventBus.getDefault().post(new SyncBundlesEvent());
+        EventBus.getDefault().post(new SyncBundlesEvent(hostname,port));
 
     }
 
     @OnClick(R.id.synchronizeMeasuresButton) void syncMeasures(){
         Log.d(LogTAG,"syncMeasures()");
-        EventBus.getDefault().post(new SyncMeasuresEvent());
+        EventBus.getDefault().post(new SyncMeasuresEvent(hostname,port));
     }
 
     @OnClick(R.id.synchronizePlansButton) void syncPlans(){
         Log.d(LogTAG,"syncPlans()");
-        EventBus.getDefault().post(new SyncPlansEvent());
+        EventBus.getDefault().post(new SyncPlansEvent(hostname,port));
     }
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void syncPlansDone(SyncPlansDoneEvent event){

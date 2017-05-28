@@ -31,7 +31,8 @@
             android:name=".activities.ScanningActivity"
             android:screenOrientation="portrait" />
         <activity android:name=".activities.MeasuresActivity" />
-        <activity android:name=".activities.SynchronizerActivity"></activity>
+        <activity android:name=".activities.SynchronizerActivity" />
+        <activity android:name=".activities.SettingsActivity"></activity>
     </application>
 
 </manifest>

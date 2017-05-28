@@ -1,6 +1,8 @@
 package pl.mysteq.software.rssirecordernew.managers;
 
 import android.app.DownloadManager;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -27,6 +29,8 @@ import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansDoneEvent
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansEvent;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
+import static android.content.Context.MODE_PRIVATE;
+import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
 import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.external_storage_app_folder_name;
 
 /**
@@ -43,7 +47,9 @@ public class SynchronizerManager {
     public static final String synchronizer_bundles_subfolder_name = "/bundles";
     public static final String synchronizer_measures_subfolder_name ="/measures";
 
-    public static final String serverURL = "http://192.168.10.123/";
+    public static final String serverURL = "http://localhost:80/";
+
+    private Context context = null;
 
     private File appExternalBaseFolder = null;
     private File appExternalSynchronizerFolder = null;
@@ -59,6 +65,10 @@ public class SynchronizerManager {
         appExternalSynchronizerBundlesFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_bundles_subfolder_name);
         appExternalSynchronizerMeasuresFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_measures_subfolder_name);
         appExternalSynchronizerPlansFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_plans_subfolder_name);
+
+        //String sharedPreferencesHostname = sharedPreferences.getString("SYNC_HOSTNAME","localhost");
+        //int sharedPreferencesPort = sharedPreferences.getInt("SYNC_PORT",80);
+
         EventBus.getDefault().register(this);
         okHttpClient = new OkHttpClient();
 
@@ -72,6 +82,7 @@ public class SynchronizerManager {
         if(instance == null) instance = getSync();
         return instance;
     }
+
 
 
 

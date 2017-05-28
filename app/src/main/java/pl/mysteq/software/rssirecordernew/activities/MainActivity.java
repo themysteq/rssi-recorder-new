@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
     Button continueLastMeasureButton = null;
     Button viewMeasuresButton = null;
     @BindView(R.id.synchronizeButton) Button synchronizeButton ;
+    @BindView(R.id.settingsButton) Button settingsButton;
     MeasureBundle measureBundle = null;
 
     @OnClick(R.id.synchronizeButton) void startSynchronizingActivity()
@@ -59,6 +60,11 @@ public class MainActivity extends Activity {
         Intent synchronizeIntent = new Intent(getBaseContext(),SynchronizerActivity.class);
         startActivity(synchronizeIntent);
     }
+    @OnClick(R.id.settingsButton) void startSettingsActivity(){
+        Intent settingsActivity = new Intent(getBaseContext(),SettingsActivity.class);
+        startActivity(settingsActivity);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
