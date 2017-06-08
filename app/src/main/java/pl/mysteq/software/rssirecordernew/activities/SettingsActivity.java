@@ -1,6 +1,7 @@
 package pl.mysteq.software.rssirecordernew.activities;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.ParseException;
 import android.os.Bundle;
@@ -33,7 +34,7 @@ public class SettingsActivity extends Activity {
         String sharedPreferencesHostname = sharedPreferences.getString("SYNC_HOSTNAME","localhost");
         int sharedPreferencesPort = sharedPreferences.getInt("SYNC_PORT",80);
         serverEditText.setText(sharedPreferencesHostname);
-        portEditText.setText(sharedPreferencesPort);
+        portEditText.setText(Integer.toString(sharedPreferencesPort) );
 
     }
 
@@ -45,7 +46,8 @@ public class SettingsActivity extends Activity {
             editor.putInt("SYNC_PORT",Integer.parseInt(portEditText.getText().toString(), 10));
             editor.putString("SYNC_HOSTNAME",serverEditText.getText().toString());
             editor.commit();
-            Toast.makeText(getApplicationContext(),"Settings saved",Toast.LENGTH_SHORT);
+            Toast.makeText(getApplicationContext(),"Settings saved",Toast.LENGTH_LONG);
+            Log.d(LogTAG,"Settings saved");
         }else {
             Log.d(LogTAG, "Settings validation failed");
         }

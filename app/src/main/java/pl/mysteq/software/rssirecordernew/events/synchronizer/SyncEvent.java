@@ -21,4 +21,15 @@ public abstract class SyncEvent {
         return scheme+hostname+":"+Integer.toString(port);
     }
 
+    public int getPort() {
+        return port;
+    }
+
+    public String getScheme() {
+        return scheme;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
 }

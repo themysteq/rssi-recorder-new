@@ -45,8 +45,9 @@ public class SynchronizerActivity extends Activity {
         ButterKnife.bind(this);
         EventBus.getDefault().register(this);
         sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
+        Log.d(LogTAG,"Getting shared preferences");
         hostname = sharedPreferences.getString("SYNC_HOSTNAME","localhost");
-        port = sharedPreferences.getInt("SYNC_PORT",80);
+        port = sharedPreferences.getInt("SYNC_PORT",5000);
 
     }
 

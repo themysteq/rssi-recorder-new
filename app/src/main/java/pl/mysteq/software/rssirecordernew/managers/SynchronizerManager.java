@@ -47,7 +47,7 @@ public class SynchronizerManager {
     public static final String synchronizer_bundles_subfolder_name = "/bundles";
     public static final String synchronizer_measures_subfolder_name ="/measures";
 
-    public static final String serverURL = "http://localhost:80/";
+    //public static final String serverURL = "http://localhost:80/";
 
     private Context context = null;
 
@@ -112,7 +112,7 @@ public class SynchronizerManager {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SyncPlansEvent event){
         Log.d(LogTAG,"SyncPlansEvent received");
-        syncPlansWithServer();
+        syncPlansWithServer(event);
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -136,7 +136,7 @@ public class SynchronizerManager {
             EventBus.getDefault().post(new SyncBundlesDoneEvent(bundlesJSON));
 */
       Log.d(LogTAG,"SyncBundlesEvent received");
-      syncBundlesWithServer();
+      syncBundlesWithServer(event);
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -144,11 +144,12 @@ public class SynchronizerManager {
         Log.d(LogTAG,"SyncMeasuresEvent received");
     }
 
-    public void syncPlansWithServer(){
+    public void syncPlansWithServer(SyncPlansEvent event){
         File plansDir = PlansFileManager.getInstance().getAppExternalPlansFolder();
         File[] plans = plansDir.listFiles(PlansFileManager.getInstance().planFilter);
 
-        Request request = new Request.Builder().url(serverURL+"/plans").build();
+        String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/plans");
+        Request request = new Request.Builder().url(syncUrl).build();
         String plansJSON = null;
 
         try {
@@ -170,11 +171,13 @@ public class SynchronizerManager {
     }
 
 
-    public void syncBundlesWithServer() {
+    public void syncBundlesWithServer(SyncBundlesEvent event) {
         File bundlesDir = PlansFileManager.getInstance().getAppExternalBundlesFolder();
         File[] bundles = bundlesDir.listFiles(PlansFileManager.getInstance().bundleFilter);
 
-        Request request = new Request.Builder().url(serverURL+"/bundles").build();
+
+        String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/bundles");
+        Request request = new Request.Builder().url(syncUrl).build();
         String bundlesJSON = null;
         ArrayList<String> bundles_missing_in_app = new ArrayList<>();
         ArrayList<String> bundles_missin_in_server = new ArrayList<>();
@@ -198,7 +201,7 @@ public class SynchronizerManager {
                             RequestBody.create(MediaType.parse("application/json"), bundle))
                     .build();
             Request uploadRequest = new Request.Builder()
-                    .url(serverURL+"/bundles")
+                    .url(syncUrl)
                     .post(requestBody)
                     .build();
             try {
