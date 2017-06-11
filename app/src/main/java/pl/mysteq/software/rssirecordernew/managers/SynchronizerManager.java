@@ -44,6 +44,7 @@ public class SynchronizerManager {
 
     public static final String synchronizer_folder_name = "/synchronizer";
     public static final String synchronizer_plans_subfolder_name = "/plans";
+    public static final String getSynchronizer_rawplans_subfolder_name = "/rawplans";
     public static final String synchronizer_bundles_subfolder_name = "/bundles";
     public static final String synchronizer_measures_subfolder_name ="/measures";
 
@@ -56,6 +57,7 @@ public class SynchronizerManager {
     private File appExternalSynchronizerPlansFolder = null;
     private File appExternalSynchronizerBundlesFolder = null;
     private File appExternalSynchronizerMeasuresFolder = null;
+    private File getAppExternalSynchronizerRawplansFolder = null;
     private OkHttpClient okHttpClient = null;
 
 
@@ -65,7 +67,7 @@ public class SynchronizerManager {
         appExternalSynchronizerBundlesFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_bundles_subfolder_name);
         appExternalSynchronizerMeasuresFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_measures_subfolder_name);
         appExternalSynchronizerPlansFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_plans_subfolder_name);
-
+        getAppExternalSynchronizerRawplansFolder  = createExternalSubFolder(appExternalSynchronizerFolder,getSynchronizer_rawplans_subfolder_name);
         //String sharedPreferencesHostname = sharedPreferences.getString("SYNC_HOSTNAME","localhost");
         //int sharedPreferencesPort = sharedPreferences.getInt("SYNC_PORT",80);
 
@@ -147,16 +149,18 @@ public class SynchronizerManager {
     public void syncPlansWithServer(SyncPlansEvent event){
         File plansDir = PlansFileManager.getInstance().getAppExternalPlansFolder();
         File[] plans = plansDir.listFiles(PlansFileManager.getInstance().planFilter);
-
+        Log.d(LogTAG,String.format("Current plans on terminal: %d ",plans.length));
         String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/plans");
-        Request request = new Request.Builder().url(syncUrl).build();
+        String rawplansSyncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/rawplans");
+        Request request = new Request.Builder().url(rawplansSyncUrl).build();
         String plansJSON = null;
+        String rawplansJSON = null;
 
         try {
            Response response = okHttpClient.newCall(request).execute();
-           plansJSON = response.body().string();
+           rawplansJSON = response.body().string();
             Log.d(LogTAG,"plansJson:");
-            Log.d(LogTAG,plansJSON);
+            Log.d(LogTAG,rawplansJSON);
         }
         catch (IOException | NullPointerException ex)
         {
@@ -167,7 +171,7 @@ public class SynchronizerManager {
             Log.d(LogTAG,"plan: "+plan.getName());
         }
 
-        EventBus.getDefault().post(new SyncPlansDoneEvent(plansJSON));
+        EventBus.getDefault().post(new SyncPlansDoneEvent(rawplansJSON));
     }
 
 
