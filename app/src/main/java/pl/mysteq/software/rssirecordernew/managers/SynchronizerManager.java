@@ -10,9 +10,18 @@ import android.util.Log;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 
 import okhttp3.MediaType;
@@ -21,14 +30,17 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.MultipartBody;
+import pl.mysteq.software.rssirecordernew.events.AddPlanEvent;
 import pl.mysteq.software.rssirecordernew.events.PlansReloadedEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesEvent;
+import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncMeasuresEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansEvent;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
+import static android.R.id.list;
 import static android.content.Context.MODE_PRIVATE;
 import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
 import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.external_storage_app_folder_name;
@@ -47,6 +59,7 @@ public class SynchronizerManager {
     public static final String getSynchronizer_rawplans_subfolder_name = "/rawplans";
     public static final String synchronizer_bundles_subfolder_name = "/bundles";
     public static final String synchronizer_measures_subfolder_name ="/measures";
+    public static final String synchronizer_temp_subfolder_name = "/temp";
 
     //public static final String serverURL = "http://localhost:80/";
 
@@ -57,7 +70,8 @@ public class SynchronizerManager {
     private File appExternalSynchronizerPlansFolder = null;
     private File appExternalSynchronizerBundlesFolder = null;
     private File appExternalSynchronizerMeasuresFolder = null;
-    private File getAppExternalSynchronizerRawplansFolder = null;
+    private File appExternalSynchronizerRawplansFolder = null;
+    private File appExternalSynchronizerTempFolder = null;
     private OkHttpClient okHttpClient = null;
 
 
@@ -67,7 +81,8 @@ public class SynchronizerManager {
         appExternalSynchronizerBundlesFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_bundles_subfolder_name);
         appExternalSynchronizerMeasuresFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_measures_subfolder_name);
         appExternalSynchronizerPlansFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_plans_subfolder_name);
-        getAppExternalSynchronizerRawplansFolder  = createExternalSubFolder(appExternalSynchronizerFolder,getSynchronizer_rawplans_subfolder_name);
+        appExternalSynchronizerRawplansFolder  = createExternalSubFolder(appExternalSynchronizerFolder,getSynchronizer_rawplans_subfolder_name);
+        appExternalSynchronizerTempFolder = createExternalSubFolder(appExternalSynchronizerFolder,synchronizer_temp_subfolder_name);
         //String sharedPreferencesHostname = sharedPreferences.getString("SYNC_HOSTNAME","localhost");
         //int sharedPreferencesPort = sharedPreferences.getInt("SYNC_PORT",80);
 
@@ -114,29 +129,18 @@ public class SynchronizerManager {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SyncPlansEvent event){
         Log.d(LogTAG,"SyncPlansEvent received");
-        syncPlansWithServer(event);
+        try {
+            syncRawPlansImages(event);
+            recreatePlans();
+            //TODO:syncPlansWithServer(event);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SyncBundlesEvent event){
-
-      /*  Log.d(LogTAG,"SyncBundlesEvent received");
-        ArrayList<PlanBundle> planBundles = PlansFileManager.getInstance().getAllBundles();
-        ArrayList<String> names = new ArrayList<String>();
-        OkHttpClient okHttpClient = new OkHttpClient();
-        Request request = new Request.Builder().url(serverURL+"/bundles").build();
-        String bundlesJSON = null;
-        try {
-            Response response = okHttpClient.newCall(request).execute();
-            bundlesJSON = response.body().string();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //for (PlanBundle planBundle : planBundles ){
-        //
-        //}
-            EventBus.getDefault().post(new SyncBundlesDoneEvent(bundlesJSON));
-*/
       Log.d(LogTAG,"SyncBundlesEvent received");
       syncBundlesWithServer(event);
     }
@@ -144,6 +148,94 @@ public class SynchronizerManager {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SyncMeasuresEvent event){
         Log.d(LogTAG,"SyncMeasuresEvent received");
+        //TODO:syncMeasures
+    }
+
+    private void moveFile(File src, File dst) throws IOException {
+        FileInputStream fileInputStream = new FileInputStream(src);
+        FileOutputStream fileOutputStream = new FileOutputStream(dst);
+        byte[] buffer = new byte[10240];
+        int len;
+        while ((len = fileInputStream.read(buffer)) != -1) {
+            fileOutputStream.write(buffer, 0, len);
+        }
+        fileInputStream.close();
+        fileOutputStream.close();
+        src.delete();
+    }
+    private File downloadFile(String uri, String filename) throws IOException, NullPointerException {
+        File tempFile = new File(appExternalSynchronizerTempFolder,filename);
+        Log.d(LogTAG, String.format("downloading file from uri: %s", uri));
+        Request request = new Request.Builder().url(uri)
+                .build();
+        Response response = okHttpClient.newCall(request).execute();
+
+        FileOutputStream fileOutputStream = new FileOutputStream(tempFile);
+        if (!response.isSuccessful()) {
+            throw new IOException("Failed to download file: " + response);
+        }
+        fileOutputStream.write(response.body().bytes());
+        fileOutputStream.close();
+        Log.d(LogTAG, String.format("filesize: %d", tempFile.length()));
+        //response.body().close();
+        Log.d(LogTAG,"download ended");
+        return tempFile;
+    }
+    public void syncRawPlansImages(SyncEvent event) throws IOException {
+
+        //list local raw plans
+        File rawPlansDir = appExternalSynchronizerRawplansFolder;
+        File[] rawPlans = rawPlansDir.listFiles();
+        ArrayList<String> localRawPlans = new ArrayList<>();
+        Log.d(LogTAG,"rawplans here we have: ");
+        for (File file : rawPlans) {localRawPlans.add(file.getName()); Log.d(LogTAG,file.getName());}
+
+
+        String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/rawplans");
+        Request request = new Request.Builder().url(syncUrl).build();
+        String rawplansJSON = null;
+       // ArrayList<String> remoteRawPlans = new ArrayList<String>();
+        ArrayList<File> downloadedFiles = new ArrayList<>();
+        ArrayList<String> toDownload = new ArrayList<>();
+        try{
+            Response response = okHttpClient.newCall(request).execute();
+            rawplansJSON = response.body().string();
+            Log.d(LogTAG,"rawPlansJSON:");
+            Log.d(LogTAG,rawplansJSON);
+
+            JSONArray jsonResponse = new JSONArray(rawplansJSON);
+            Log.d(LogTAG,jsonResponse.toString());
+
+            for (int i = 0; i < jsonResponse.length(); i++) {
+                String filename = jsonResponse.getString(i);
+                if( ! localRawPlans.contains(filename)){
+                    String rawurl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/rawplans/"+filename);
+                    downloadedFiles.add(downloadFile(rawurl,filename));
+                }
+            }
+
+        }
+        catch (IOException ex){
+            Log.d(LogTAG,ex.getMessage());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        for (File f : downloadedFiles){
+            Log.d(LogTAG,"file: "+f.getName());
+            File rawPlanFile = new File(appExternalSynchronizerRawplansFolder,f.getName());
+            moveFile(f,rawPlanFile);
+        }
+
+        //create new bundles based on plans
+    }
+
+    public void recreatePlans(){
+
+        File[] rawPlans = appExternalSynchronizerRawplansFolder.listFiles();
+        for(File rawplan : rawPlans){
+            Log.d(LogTAG, String.format("posting AddPlanEvent: %s : %s",rawplan.getAbsolutePath(),rawplan.getName() ));
+            EventBus.getDefault().post(new AddPlanEvent(rawplan.getAbsolutePath(),rawplan.getName()));
+        }
     }
 
     public void syncPlansWithServer(SyncPlansEvent event){
@@ -151,16 +243,15 @@ public class SynchronizerManager {
         File[] plans = plansDir.listFiles(PlansFileManager.getInstance().planFilter);
         Log.d(LogTAG,String.format("Current plans on terminal: %d ",plans.length));
         String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/plans");
-        String rawplansSyncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/rawplans");
-        Request request = new Request.Builder().url(rawplansSyncUrl).build();
+        Request request = new Request.Builder().url(syncUrl).build();
         String plansJSON = null;
-        String rawplansJSON = null;
+        //String rawplansJSON = null;
 
         try {
            Response response = okHttpClient.newCall(request).execute();
-           rawplansJSON = response.body().string();
+            plansJSON = response.body().string();
             Log.d(LogTAG,"plansJson:");
-            Log.d(LogTAG,rawplansJSON);
+            Log.d(LogTAG,plansJSON);
         }
         catch (IOException | NullPointerException ex)
         {
@@ -170,8 +261,7 @@ public class SynchronizerManager {
         for (File plan : plans) {
             Log.d(LogTAG,"plan: "+plan.getName());
         }
-
-        EventBus.getDefault().post(new SyncPlansDoneEvent(rawplansJSON));
+        EventBus.getDefault().post(new SyncPlansDoneEvent(plansJSON));
     }
 
 
@@ -181,7 +271,7 @@ public class SynchronizerManager {
 
 
         String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/bundles");
-        Request request = new Request.Builder().url(syncUrl).build();
+        Request request = new Request.Builder().url(syncUrl).addHeader("content-type","application/json").build();
         String bundlesJSON = null;
         ArrayList<String> bundles_missing_in_app = new ArrayList<>();
         ArrayList<String> bundles_missin_in_server = new ArrayList<>();
