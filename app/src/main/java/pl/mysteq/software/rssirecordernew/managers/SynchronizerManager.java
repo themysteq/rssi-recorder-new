@@ -60,7 +60,7 @@ public class SynchronizerManager {
     public static final String synchronizer_bundles_subfolder_name = "/bundles";
     public static final String synchronizer_measures_subfolder_name ="/measures";
     public static final String synchronizer_temp_subfolder_name = "/temp";
-
+    public static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     //public static final String serverURL = "http://localhost:80/";
 
     private Context context = null;
@@ -289,14 +289,13 @@ public class SynchronizerManager {
         }
         for (File bundle : bundles){
             Log.d(LogTAG,"bundle: "+bundle.getName());
-            RequestBody requestBody = new MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("file", bundle.getName(),
-                            RequestBody.create(MediaType.parse("application/json"), bundle))
-                    .build();
+
+            RequestBody body = RequestBody.create(JSON, bundle);
+            //FIXME: dirtyhack
+            String syncUrlForBundle = syncUrl+"/"+bundle.getName();
             Request uploadRequest = new Request.Builder()
-                    .url(syncUrl)
-                    .post(requestBody)
+                    .url(syncUrlForBundle)
+                    .post(body)
                     .build();
             try {
                 Response uploadResponse = okHttpClient.newCall(uploadRequest).execute();
