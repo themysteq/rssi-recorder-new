@@ -35,6 +35,7 @@ import pl.mysteq.software.rssirecordernew.events.PlansReloadedEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncEvent;
+import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncMeasuresDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncMeasuresEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansEvent;
@@ -148,6 +149,7 @@ public class SynchronizerManager {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SyncMeasuresEvent event){
         Log.d(LogTAG,"SyncMeasuresEvent received");
+        syncMeasures(event);
         //TODO:syncMeasures
     }
 
@@ -214,17 +216,18 @@ public class SynchronizerManager {
                 }
             }
 
+            for (File f : downloadedFiles){
+                Log.d(LogTAG,"file: "+f.getName());
+                File rawPlanFile = new File(appExternalSynchronizerRawplansFolder,f.getName());
+                moveFile(f,rawPlanFile);
+            }
         }
         catch (IOException ex){
             Log.d(LogTAG,ex.getMessage());
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        for (File f : downloadedFiles){
-            Log.d(LogTAG,"file: "+f.getName());
-            File rawPlanFile = new File(appExternalSynchronizerRawplansFolder,f.getName());
-            moveFile(f,rawPlanFile);
-        }
+
 
         //create new bundles based on plans
     }
@@ -236,6 +239,48 @@ public class SynchronizerManager {
             Log.d(LogTAG, String.format("posting AddPlanEvent: %s : %s",rawplan.getAbsolutePath(),rawplan.getName() ));
             EventBus.getDefault().post(new AddPlanEvent(rawplan.getAbsolutePath(),rawplan.getName()));
         }
+    }
+
+    private void syncMeasures(SyncEvent event){
+        File measuresDir = PlansFileManager.getInstance().getAppExternalMeasuresFolder();
+        File[] measures = measuresDir.listFiles(PlansFileManager.getInstance().measureFilter);
+
+
+        String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/measures");
+        Request request = new Request.Builder().url(syncUrl).addHeader("content-type","application/json").build();
+        //FIXME: could be slow and memory consuming! just send file as binary?!
+        String measuresJSON = null;
+        try {
+            Response response = okHttpClient.newCall(request).execute();
+            measuresJSON  = response.body().string();
+            Log.d(LogTAG,"measuresJSON!");
+            //Log.d(LogTAG,bundlesJSON);
+        } catch (java.net.ConnectException e){
+            Log.e(LogTAG, e.getMessage());
+            Log.e(LogTAG,"can't connect");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        for (File measure : measures){
+            Log.d(LogTAG,"measure: "+measure.getName());
+
+            RequestBody body = RequestBody.create(JSON, measure);
+            //FIXME: dirtyhack
+            String syncUrlForMeasure = syncUrl+"/"+measure.getName();
+            Request uploadRequest = new Request.Builder()
+                    .url(syncUrlForMeasure)
+                    .post(body)
+                    .build();
+            try {
+                Response uploadResponse = okHttpClient.newCall(uploadRequest).execute();
+                Log.d(LogTAG, uploadResponse.body().string());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        EventBus.getDefault().post(new SyncMeasuresDoneEvent());
+
     }
 
     public void syncPlansWithServer(SyncPlansEvent event){
