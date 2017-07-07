@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -21,6 +22,8 @@ import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncMeasuresDoneEv
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncMeasuresEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansEvent;
+import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncRawPlansDoneEvent;
+import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncRawPlansEvent;
 import pl.mysteq.software.rssirecordernew.managers.SynchronizerManager;
 
 import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
@@ -71,21 +74,38 @@ public class SynchronizerActivity extends Activity {
         Log.d(LogTAG,"syncPlans()");
         EventBus.getDefault().post(new SyncPlansEvent(hostname,port));
     }
+    @OnClick(R.id.synchronizeRawPlansButton) void syncRawPlans(){
+        Log.d(LogTAG,"syncRawPlans()");
+        EventBus.getDefault().post(new SyncRawPlansEvent(hostname,port));
+    }
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void syncPlansDone(SyncPlansDoneEvent event){
+        Log.d(LogTAG,"SyncPlansDoneEvent done");
         if(event.plans != null) editText.setText(event.plans);
         else editText.setText("@NONE@");
+
+        Toast.makeText(getApplicationContext(),"sync plans done",Toast.LENGTH_SHORT).show();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void syncBundlesDone(SyncBundlesDoneEvent event){
+        Log.d(LogTAG,"SyncBundlesDoneEventt done");
         if(event.bundles != null) editText.setText(event.bundles);
         else editText.setText("@NONE@");
+
+        Toast.makeText(getApplicationContext(),"sync bundles done",Toast.LENGTH_SHORT).show();
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void syncRawPlansDone(SyncRawPlansDoneEvent event)
+    {
+        Log.d(LogTAG,"SyncRawPlansDoneEvent done");
+        Toast.makeText(getApplicationContext(),"plans downloaded",Toast.LENGTH_SHORT).show();
     }
 
-    @Subscribe
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void syncMeasuresDone(SyncMeasuresDoneEvent event){
-
+        Log.d(LogTAG,"SyncMeasuresDoneEvent done");
+        Toast.makeText(getApplicationContext(),"measures synced",Toast.LENGTH_SHORT).show();
     }
 
 }

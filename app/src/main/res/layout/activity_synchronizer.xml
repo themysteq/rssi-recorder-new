@@ -25,6 +25,12 @@
             android:text="sync plans" />
 
         <Button
+            android:id="@+id/synchronizeRawPlansButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="download raw plans" />
+
+        <Button
             android:id="@+id/synchronizeBundlesButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

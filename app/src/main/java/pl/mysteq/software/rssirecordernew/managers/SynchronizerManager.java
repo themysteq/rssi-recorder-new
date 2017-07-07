@@ -39,6 +39,7 @@ import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncMeasuresDoneEv
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncMeasuresEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansEvent;
+import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncRawPlansEvent;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
 import static android.R.id.list;
@@ -128,8 +129,8 @@ public class SynchronizerManager {
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
-    public void OnMessage(SyncPlansEvent event){
-        Log.d(LogTAG,"SyncPlansEvent received");
+    public void OnMessage(SyncRawPlansEvent event){
+        Log.d(LogTAG,"SyncRawPlansEvent received");
         try {
             syncRawPlansImages(event);
             recreatePlans();
@@ -139,6 +140,12 @@ public class SynchronizerManager {
         }
 
     }
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void OnMessage(SyncPlansEvent event){
+        Log.d(LogTAG,"SyncPlansEvent received");
+        syncPlans(event);
+    }
+
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SyncBundlesEvent event){
@@ -283,30 +290,58 @@ public class SynchronizerManager {
 
     }
 
-    public void syncPlansWithServer(SyncPlansEvent event){
+    public void syncPlans(SyncPlansEvent event){
         File plansDir = PlansFileManager.getInstance().getAppExternalPlansFolder();
-        File[] plans = plansDir.listFiles(PlansFileManager.getInstance().planFilter);
+        //FIXME: filter is not working and nobody knows why!!!
+        //File[] plansNoFilter = plansDir.listFiles();
+       // Log.d(LogTAG, String.format("plans with no filter: %d", plansNoFilter.length ));
+       // File[] plans = plansDir.listFiles(PlansFileManager.getInstance().planFilter);
+        File[] plans = plansDir.listFiles();
         Log.d(LogTAG,String.format("Current plans on terminal: %d ",plans.length));
         String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/plans");
         Request request = new Request.Builder().url(syncUrl).build();
-        String plansJSON = null;
+        String plansRawJSON = null;
         //String rawplansJSON = null;
 
         try {
-           Response response = okHttpClient.newCall(request).execute();
-            plansJSON = response.body().string();
+            Response response = okHttpClient.newCall(request).execute();
+            plansRawJSON = response.body().string();
+            JSONArray plansJSON = new JSONArray(plansRawJSON);
             Log.d(LogTAG,"plansJson:");
-            Log.d(LogTAG,plansJSON);
+            Log.d(LogTAG, plansRawJSON);
+            //FIXME: do not upload unwanted files
+            for(File plan : plans){
+                //upload every plan
+                Log.d(LogTAG, String.format("Sending file: %s",plan.getName() ));
+                RequestBody requestBody = new MultipartBody.Builder()
+                        .setType(MultipartBody.FORM)
+                        .addFormDataPart("file", plan.getName(),
+                                RequestBody.create(MediaType.parse("image/png"), plan))
+                        .build();
+                Thread.sleep(1000);
+                Request uploadRequest = new Request.Builder()
+                        .url(syncUrl)
+                        .post(requestBody)
+                        .addHeader("Connection","close")
+                        .build();
+                Response uploadResponse = okHttpClient.newCall(uploadRequest).execute();
+                Log.d(LogTAG, String.format("upload response %s", uploadResponse.body().string()));
+
+            }
         }
         catch (IOException | NullPointerException ex)
         {
-            Log.d(LogTAG,ex.getMessage());
+            ex.printStackTrace();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
         for (File plan : plans) {
             Log.d(LogTAG,"plan: "+plan.getName());
         }
-        EventBus.getDefault().post(new SyncPlansDoneEvent(plansJSON));
+        EventBus.getDefault().post(new SyncPlansDoneEvent(plansRawJSON));
     }
 
 
