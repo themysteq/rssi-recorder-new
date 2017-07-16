@@ -187,9 +187,16 @@ public final class PlansFileManager {
         File[] bundles = this.appExternalBundlesFolder.listFiles(this.bundleFilter);
         this.bundlesContainerList.clear();
         for (File file : bundles) {
-            planBundle = jsonPlanBundleReader.run(file);
-            Log.d(LogTAG,"Read from storage bundle: "+planBundle.getPlanBundleName());
-            this.bundlesContainerList.add(planBundle);
+            try {
+                planBundle = jsonPlanBundleReader.run(file);
+                Log.d(LogTAG, "Read from storage bundle: " + planBundle.getPlanBundleName());
+                this.bundlesContainerList.add(planBundle);
+            }
+            catch (NullPointerException e){
+               // Log.e(LogTAG,e.getMessage());
+                Log.e(LogTAG,e.getMessage(),e);
+
+            }
         }
         EventBus.getDefault().post(new BundlesReloadedEvent());
     }

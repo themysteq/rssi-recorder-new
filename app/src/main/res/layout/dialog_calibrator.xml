@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/calibratorArrowImageView"
+        android:layout_width="match_parent"
+        android:layout_height="@android:dimen/thumbnail_height" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/activity_vertical_margin" />
+
+    <SeekBar
+        android:id="@+id/calibratorSeekBarOffset"
+        style="Seek"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="359"
+        android:progress="0" />
+
+    <TextView
+        android:id="@+id/calibratorDegreeLabelTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="degrees:" />
+
+    <TextView
+        android:id="@+id/calibratorDegreeTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TextView" />
+
+    <TextView
+        android:id="@+id/calibratorTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:editable="false"
+        android:inputType="textMultiLine"
+        android:text="TextView" />
+
+</LinearLayout>
