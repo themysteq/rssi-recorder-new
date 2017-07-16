@@ -17,6 +17,18 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true">
 
+        <TextView
+            android:id="@+id/selectedPlanLabelTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="selected plan:" />
+
+        <TextView
+            android:id="@+id/selectedPlanTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=" -- none --" />
+
         <GridLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -34,16 +46,18 @@
                 android:textAllCaps="false" />
 
             <Button
-                android:text="View measure"
+                android:id="@+id/pickPlanButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:id="@+id/openViewMeasureButton"
-                android:layout_row="2"
                 android:layout_column="0"
-                android:textAlignment="center"
+                android:layout_row="2"
                 android:fontFamily="sans-serif-medium"
+                android:text="-- pick plan --"
+                android:textAlignment="center"
+                android:textAllCaps="false"
                 android:textSize="24sp"
-                android:textAllCaps="false" />
+                android:textStyle="normal|italic"
+                android:visibility="visible" />
 
             <Button
                 android:text="Continue last measure"
@@ -58,42 +72,52 @@
                 android:enabled="false" />
 
             <Button
-                android:text="Manage plans"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/openPlanManagerButton"
-                android:layout_row="3"
-                android:layout_column="0"
-                android:textAlignment="center"
-                android:fontFamily="sans-serif-medium"
-                android:textSize="24sp"
-                android:textAllCaps="false" />
-
-            <Button
-                android:text="-- pick plan --"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/pickPlanButton"
-                android:layout_row="5"
-                android:layout_column="0"
-                android:textAlignment="center"
-                android:fontFamily="sans-serif-medium"
-                android:textSize="24sp"
-                android:textAllCaps="false"
-                android:textStyle="normal|italic"
-                android:visibility="visible" />
-
-            <Button
-                android:text="Synchronize"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:id="@+id/synchronizeButton"
-                android:layout_row="7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_column="0"
-                android:textAlignment="center"
+                android:layout_row="9"
                 android:fontFamily="sans-serif-medium"
-                android:textSize="24sp"
-                android:textAllCaps="false" />
+                android:text="Synchronize"
+                android:textAlignment="center"
+                android:textAllCaps="false"
+                android:textSize="24sp" />
+
+            <Button
+                android:id="@+id/openPlanManagerButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="5"
+                android:fontFamily="sans-serif-medium"
+                android:text="Manage plans"
+                android:textAlignment="center"
+                android:textAllCaps="false"
+                android:textSize="24sp" />
+
+            <Button
+                android:id="@+id/openViewMeasureButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="4"
+                android:fontFamily="sans-serif-medium"
+                android:text="View measures"
+                android:textAlignment="center"
+                android:textAllCaps="false"
+                android:textSize="24sp" />
+            <Button
+                android:id="@+id/settingsButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="8"
+                android:fontFamily="sans-serif-medium"
+                android:text="Settings"
+                android:textAlignment="center"
+                android:textAllCaps="false"
+                android:textSize="24sp" />
+
         </GridLayout>
     </LinearLayout>
 </RelativeLayout>
