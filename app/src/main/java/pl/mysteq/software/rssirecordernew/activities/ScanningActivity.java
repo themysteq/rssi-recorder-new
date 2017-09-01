@@ -38,6 +38,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import pl.mysteq.software.rssirecordernew.R;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompleted;
@@ -88,6 +90,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     MeasureBundle measureBundle = null;
     ArrayList<CustomScanResult> customScanResults;
 
+    int currentMeasuresCounter = 0;
+
     float calibrationOffset = 0;
     float calbratedRotation = 0;
 
@@ -114,10 +118,13 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     AlertDialog aboutCalibrationDialog = null;
     CalibratorDialog calibratorDialog = null;
 
+    @BindView(R.id.counterSummaryTextView) TextView counterTextView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scanning);
+        ButterKnife.bind(this);
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
@@ -146,21 +153,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         }
         progressDialog.dismiss();
         aboutCalibrationDialog.show();
-        //
-/*
-        mostRightButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(lockOrient )
-                {
-                    //offset = degrees;
-                }
-                lockOrient = ! lockOrient;
-               // mostRightButton.setEnabled(!mostRightButton.isEnabled());
-                Log.d(LogTAG, String.format("degrees with offset: %f | offset: %f", degressWithOffset,offset));
-            }
-        });
-*/
+        counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getMeasuresCount()));
+
 
         zoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -242,6 +236,10 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
                     //markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
 
+
+                    //Update counters and display them
+                    currentMeasuresCounter++;
+                    counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getMeasuresCount()));
 
 
 

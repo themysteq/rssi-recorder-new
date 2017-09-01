@@ -92,6 +92,20 @@
                 android:text="TextView" />
         </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/counterSummaryTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Measures. Current:0 Total:0" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/scanningTextView"
             android:layout_width="match_parent"
