@@ -123,6 +123,9 @@ public final class MyWifiScannerManager {
         writer.run();
         Log.d(LogTAG,"saving "+filepath);
     }
+    public int getMeasuresCount(){
+        return this.measurePointArrayList.size();
+    }
     public void saveToFile(MeasureBundle measureBundle)
     {
         measureBundle.setMeasures(this.measurePointArrayList);

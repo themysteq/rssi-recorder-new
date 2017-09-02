@@ -1,9 +1,11 @@
 package pl.mysteq.software.rssirecordernew.activities;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
@@ -19,10 +21,13 @@ import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -33,6 +38,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import pl.mysteq.software.rssirecordernew.R;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompleted;
@@ -72,6 +79,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     float lockedDegree = 0;
     float px,py;
     float offset = 0;
+
     Bitmap buildingBitmap = null;
     Bitmap measuresBitmap = null;
     MyWifiScannerManager scannerManagerInstance = null;
@@ -81,6 +89,12 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     String measureName = null;
     MeasureBundle measureBundle = null;
     ArrayList<CustomScanResult> customScanResults;
+
+    int currentMeasuresCounter = 0;
+
+    float calibrationOffset = 0;
+    float calbratedRotation = 0;
+
 
     SensorManager mSensorManager ;
     Sensor accelerometer;
@@ -97,13 +111,20 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     TextView degreesTextView = null;
     TextView offsetTextView = null;
 
+
+
     boolean lockOrient = true;
     ProgressDialog progressDialog = null;
+    AlertDialog aboutCalibrationDialog = null;
+    CalibratorDialog calibratorDialog = null;
+
+    @BindView(R.id.counterSummaryTextView) TextView counterTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scanning);
+        ButterKnife.bind(this);
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
@@ -131,21 +152,9 @@ public class ScanningActivity extends Activity implements SensorEventListener {
             Log.i(LogTAG,"Empty measure file when loading");
         }
         progressDialog.dismiss();
-        //
-/*
-        mostRightButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(lockOrient )
-                {
-                    //offset = degrees;
-                }
-                lockOrient = ! lockOrient;
-               // mostRightButton.setEnabled(!mostRightButton.isEnabled());
-                Log.d(LogTAG, String.format("degrees with offset: %f | offset: %f", degressWithOffset,offset));
-            }
-        });
-*/
+        aboutCalibrationDialog.show();
+        counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getMeasuresCount()));
+
 
         zoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -220,13 +229,17 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     Log.d(LogTAG, String.format("On image: X: %d Y: %d, rotation: %f, px: %f, py: %f", pointOnImage.x,pointOnImage.y,degressWithOffset,px,py));
 
 
-                    scannerManagerInstance.addMeasurePoint(customScanResults,pointOnImage,Math.round(degressWithOffset) );
+                    scannerManagerInstance.addMeasurePoint(customScanResults,pointOnImage,Math.round((degrees+calibrationOffset)%360.f) );
                     markupsImageManipulationManager.drawPoint(pointOnImage);
                     markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
 
                     //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
                     //markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
 
+
+                    //Update counters and display them
+                    currentMeasuresCounter++;
+                    counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getMeasuresCount()));
 
 
 
@@ -385,6 +398,25 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         progressDialog.show();
 
 
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setCancelable(false);
+        alertDialogBuilder.setMessage("Remember about the calibration setup!");
+        alertDialogBuilder.setTitle("Calibration?");
+        alertDialogBuilder.setPositiveButton("Continue",null);
+
+        alertDialogBuilder.setNegativeButton("Calibrate", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            //    Log.d(LogTAG, String.format("Calibrate: Clicked %d button", which ));
+                    showCalibrator();
+            }
+        });
+        aboutCalibrationDialog = alertDialogBuilder.create();
+
+
+
+
+
 
 
     }
@@ -438,12 +470,13 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                 }
 
 
+
             }
 
 
         }
 
-        degreesTextView.setText(String.format("%.2f",degressWithOffset));
+        degreesTextView.setText(String.format("%.2f",(degrees+calibrationOffset)%360.f));
         offsetTextView.setText(String.format("%.2f",lockedDegree));
 
         //mCustomDrawableView.invalidate();
@@ -480,5 +513,52 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
 
     }
+
+    public void showCalibrator(){
+        /*
+        AlertDialog.Builder calibratorBuilder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = this.getLayoutInflater();
+
+        View calibratorView = inflater.inflate(R.layout.dialog_calibrator,null);
+        calibratorBuilder.setView(calibratorView);
+
+        calibratorBuilder.setPositiveButton("OK",null);
+        calibratorBuilder.setNegativeButton("Cancel",null);
+        AlertDialog calibraterDialog = calibratorBuilder.create();
+        calibraterDialog.getLayoutInflater().
+
+        calibraterDialog.show();
+        */
+
+        calibratorDialog = new CalibratorDialog(this);
+
+        final SeekBar calibratorSeekBar = calibratorDialog.degreeSeekBar;
+        final TextView calibratorDegrees = calibratorDialog.degreesTextView;
+        final ImageView calibratorImage = calibratorDialog.arrowImageView;
+        calibratorSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                //calibratorDegrees.setText(String.format("%d°", progress));
+                //float rotation = ((float)progress)/360.f;
+               /// Log.d(LogTAG, String.format("rotation: %f", rotation));
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                calibratorImage.setRotation(degrees+calibrationOffset);
+                calibrationOffset = seekBar.getProgress();
+                calibratorDegrees.setText(String.format("%f",calibrationOffset ) );
+            }
+        });
+        calibratorDialog.create().show();
+
+    }
+
 
 }
