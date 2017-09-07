@@ -1,5 +1,8 @@
 package pl.mysteq.software.rssirecordernew.structures;
 
+import android.graphics.Point;
+import android.graphics.Rect;
+
 import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
@@ -11,6 +14,8 @@ import java.util.ArrayList;
 public class PlanBundle {
 
     public static final String SELECTED_PLANBUNDLE_KEY = "plan_bundle_key";
+    public static final int SECTOR_X_SIZE = 50;
+    public static final int SECTOR_Y_SIZE = 50;
 
     @SerializedName("building_plan_filename")
     private String buildingPlanFileName = "";
@@ -52,4 +57,13 @@ public class PlanBundle {
     public void addMeasureFilename(String filename){
         this.measuresFileNames.add(filename);
     }
+    public static Point getSectorFromPointOnImage(Point pointOnImage){
+        Point sectorPoint = new Point();
+
+        int sector_x = ((Double)(Math.floor(pointOnImage.x/PlanBundle.SECTOR_X_SIZE))).intValue();
+        int sector_y = ((Double)(Math.floor(pointOnImage.y/PlanBundle.SECTOR_Y_SIZE))).intValue();
+        sectorPoint.set(sector_x,sector_y);
+        return sectorPoint;
+    }
+
 }

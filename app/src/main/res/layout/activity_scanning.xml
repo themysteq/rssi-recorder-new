@@ -11,6 +11,8 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="pl.mysteq.software.rssirecordernew.activities.ScanningActivity">
 
+
+
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
@@ -29,13 +31,13 @@
         <FrameLayout
             android:id="@+id/frameLayoutWithImages"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1">
 
             <ImageView
                 android:id="@+id/markupMeasuresImageView"
                 android:layout_width="match_parent"
-                android:layout_height="700px"
+                android:layout_height="match_parent"
                 android:alpha="0.5"
                 android:clickable="false"
                 android:elevation="2dp"
@@ -46,7 +48,7 @@
             <ImageView
                 android:id="@+id/buildingPlanImageView"
                 android:layout_width="match_parent"
-                android:layout_height="700px"
+                android:layout_height="match_parent"
                 android:alpha="0.5"
                 android:elevation="1dp"
                 android:scaleType="matrix"
@@ -60,7 +62,6 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="horizontal">
 
             <TextView
@@ -95,7 +96,6 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="horizontal">
 
             <TextView
@@ -104,6 +104,13 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Measures. Current:0 Total:0" />
+
+            <TextView
+                android:id="@+id/selectedSectorTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="TextView" />
         </LinearLayout>
 
         <TextView
@@ -127,7 +134,7 @@
             android:id="@+id/zoomSeekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:clickable="true"
             android:max="3"
             android:progress="0" />
 
@@ -159,9 +166,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="usun"
+                android:text="Autoscan"
                 android:textSize="12sp"
-                android:visibility="invisible" />
+                android:visibility="visible" />
 
             <Button
                 android:id="@+id/mostRightButton"
@@ -175,5 +182,11 @@
 
 
     </LinearLayout>
-
+    <ImageButton
+        android:id="@+id/directionImageButton"
+        android:layout_width="@android:dimen/notification_large_icon_width"
+        android:layout_height="@android:dimen/notification_large_icon_height"
+        android:layout_alignParentRight="true"
+        android:scaleType="fitCenter"
+        android:src="@drawable/red_arrow" />
 </RelativeLayout>
