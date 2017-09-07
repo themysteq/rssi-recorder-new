@@ -18,7 +18,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:max="359"
-        android:progress="0" />
+        android:progress="0"
+        android:visibility="invisible" />
 
     <TextView
         android:id="@+id/calibratorDegreeLabelTextView"
@@ -33,11 +34,12 @@
         android:text="TextView" />
 
     <TextView
-        android:id="@+id/calibratorTextView"
+        android:id="@+id/generalTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:editable="false"
         android:inputType="textMultiLine"
-        android:text="TextView" />
+        android:text="TextView"
+        android:visibility="visible" />
 
 </LinearLayout>

@@ -9,6 +9,7 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Created by mysteq on 2017-05-01.
@@ -77,4 +78,17 @@ public class MeasureBundle {
     public void setMeasures(ArrayList<MeasurePoint> measures) {
         this.measures = measures;
     }
+
+    /*
+    public ArrayList<MeasurePoint> getMeasures(Predicate<MeasurePoint> coursePredicate) {
+        ArrayList<Course> toReturn = new ArrayList<>();
+        for (Course c : allCourses
+                .stream()
+                .filter(coursePredicate)
+                .toArray(Course[]::new)) {
+            toReturn.add(c);
+        }
+        return toReturn;
+    }
+    */
 }

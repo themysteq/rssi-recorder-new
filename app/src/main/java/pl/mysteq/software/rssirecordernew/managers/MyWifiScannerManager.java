@@ -13,8 +13,9 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.File;
 import java.util.ArrayList;
 
+import pl.mysteq.software.rssirecordernew.events.PerformWifiScanEvent;
 import pl.mysteq.software.rssirecordernew.events.SaveMeasuresEvent;
-import pl.mysteq.software.rssirecordernew.events.WifiScanCompleted;
+import pl.mysteq.software.rssirecordernew.events.WifiScanCompletedEvent;
 import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
 import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
@@ -58,6 +59,7 @@ public final class MyWifiScannerManager {
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_SCAN_ONLY, "RSSI_RECORDER_WIFI_LOCK");
         wifiLock.acquire();
         if(! initialized) {
+            Log.d(LogTAG,"registering to EventBus");
             EventBus.getDefault().register(this);
         }
         Log.d(LogTAG,"Initialized");
@@ -75,15 +77,18 @@ public final class MyWifiScannerManager {
 
     }
     @Subscribe(threadMode = ThreadMode.ASYNC)
-    public void scanDone(WifiScanCompleted event)
+    public void scanDone(WifiScanCompletedEvent event)
     {
-
+        Log.d(LogTAG,"scanDone");
         ArrayList<ScanResult> scanResults = (ArrayList<ScanResult>) this.wifiManager.getScanResults();
         lastScanResults = new ArrayList<>();
 
+        if (scanResults.size() < 1){
+            Log.w(LogTAG,"scanResults are empty!");
+        }
         for(ScanResult scanResult : scanResults)
         {
-            //Log.d(LogTAG,"scanResult: "+scanResult.toString());
+            Log.v(LogTAG,"scanResult: "+scanResult.toString());
             lastScanResults.add(new CustomScanResult(scanResult));
 
         }
@@ -112,6 +117,11 @@ public final class MyWifiScannerManager {
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(SaveMeasuresEvent event){
         saveToFile(new File(event.fullpath),event.plan_name);
+    }
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void OnMessage(PerformWifiScanEvent event){
+        Log.d(LogTAG,"PerformWifiScanEvent received");
+        this.scan();
     }
 
     public void saveToFile(File filepath,String planName){

@@ -55,7 +55,14 @@ public class MeasuresArrayAdapter extends ArrayAdapter {
         SimpleDateFormat fmtOut = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         //DateFormat dateFormat = android.text.format.DateFormat.getTimeFormat(parent.getContext());
 
-        dateTextView.setText(fmtOut.format(measureBundle.getLastChanged()));
+        if (measureBundle.getLastChanged() != null){
+            dateTextView.setText(fmtOut.format(measureBundle.getLastChanged()));
+        }
+        else
+            {
+            Log.e(LogTAG, String.format(" %s getLastChanged() is null",measureBundle.getUuid() ));
+                dateTextView.setText("n/n");
+        }
 
        // measuresNameTextView.setText(planBundle.getPlanBundleName());
         //measuresNameTextView.setText("HEHEHE");
