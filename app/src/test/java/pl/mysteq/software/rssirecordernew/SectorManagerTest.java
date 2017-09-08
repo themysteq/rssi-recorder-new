@@ -55,4 +55,18 @@ public class SectorManagerTest {
         //Sector sector3 = new Sector(new Point(3,5));
         assertFalse(sectorManager.getSector(sector2.getCoordinates()).isEmptySector());
     }
+    @Test
+    public void queryingEmptyRow(){
+        SectorManager sectorManager = new SectorManager();
+        Sector sector1 = new Sector(new Point(4,5));
+        //Sector sector2 = new Sector(new Point(4,6));
+        sectorManager.insertSector(sector1);
+        assertNull(sectorManager.getSector(new Point(4,6)));
+    }
+
+    @Test
+    public void queryingNoSectors(){
+        SectorManager sectorManager = new SectorManager();
+        assertNull( sectorManager.getSector(new Point(5,7)));
+    }
 }

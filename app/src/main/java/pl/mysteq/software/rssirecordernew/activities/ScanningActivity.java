@@ -563,63 +563,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
 
     }
-/*
-    public void showCalibrator(){
 
-
-        calibratorDialog = new CalibratorDialog(this);
-
-        final SeekBar calibratorSeekBar = calibratorDialog.degreeSeekBar;
-        final TextView calibratorDegrees = calibratorDialog.degreesTextView;
-        final TextView generalTextView = calibratorDialog.generalTextView;
-        final ImageView calibratorImage = calibratorDialog.arrowImageView;
-        calibratorSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                //calibratorDegrees.setText(String.format("%d°", progress));
-                //float rotation = ((float)progress)/360.f;
-               /// Log.d(LogTAG, String.format("rotation: %f", rotation));
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-        //        calibratorImage.setRotation(degrees+calibrationOffset);
-        //        calibrationOffset = seekBar.getProgress();
-       //         calibratorDegrees.setText(String.format("%f",calibrationOffset ) );
-            }
-        });
-        calibratorDialog.create().show();
-        new CountDownTimer(5000, 50) {
-            float somethingCalledOffset = 0.f;
-            float newValue = 0.f;
-            float smoothedValue = 0;
-            @Override
-            public void onTick(long millisUntilFinished) {
-
-                somethingCalledOffset = (360 - degrees)%360;
-                smoothedValue += (somethingCalledOffset - smoothedValue) / 5;
-                Log.v(LogTAG, String.format("calibration offset: %f. smoothed: %f", somethingCalledOffset, smoothedValue));
-                calibratorImage.setRotation(degrees+somethingCalledOffset);
-                generalTextView.setText(String.format("00:%02d",millisUntilFinished/1000 ));
-                calibratorDegrees.setText(String.format("offset: %.2f", smoothedValue));
-
-            }
-
-            @Override
-            public void onFinish() {
-              //  info.setVisibility(View.GONE);
-                    calibrationOffset = smoothedValue;
-            }
-        }.start();
-
-    }
-*/
     @OnClick(R.id.rightButton) void startAutoMeasure()
     {
        Log.d(LogTAG,"startAutoMeasure onClick()");

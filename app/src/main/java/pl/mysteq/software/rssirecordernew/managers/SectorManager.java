@@ -41,8 +41,10 @@ public class SectorManager {
     }
     public Sector getSector(Point coordinates){
         Log.v(LogTAG, String.format("getSector(%s)", coordinates.toString()));
-        //FIXME: NullPointerException when empty!
-        return sectors.get(coordinates.x).get(coordinates.y);
+        if( sectors.get(coordinates.x) != null) {
+            return sectors.get(coordinates.x).get(coordinates.y);
+        }
+        else return null;
     }
     public int countAllSectors()
     {
