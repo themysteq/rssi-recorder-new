@@ -64,7 +64,12 @@ public class ImageManipulationManager {
 
     }
     public  void setBitmap(Bitmap _bitmap){
-        this.bitmap = _bitmap.copy(_bitmap.getConfig(),true);
+        if(this.bitmap != null) {
+            this.bitmap.recycle();
+            Log.w(LogTAG,"Recycling bitmap");
+        }
+       this.bitmap = _bitmap.copy(_bitmap.getConfig(),true);
+       _bitmap.recycle();
         this.canvas.setBitmap(this.bitmap);
     }
     /*public void setBitmap(File filepath){
@@ -78,6 +83,7 @@ public class ImageManipulationManager {
     }
     public void setBlankBitmap(Bitmap bitmap){
         this.bitmap = Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        //bitmap.recycle();
         this.canvas.setBitmap(this.bitmap);
     }
     public Bitmap getBitmap()

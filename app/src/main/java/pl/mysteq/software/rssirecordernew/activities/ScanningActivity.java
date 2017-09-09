@@ -11,7 +11,6 @@ import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -19,7 +18,6 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -47,7 +45,6 @@ import pl.mysteq.software.rssirecordernew.R;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.SubmitAutoScanEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompletedEvent;
-import pl.mysteq.software.rssirecordernew.managers.AutoScanManager;
 import pl.mysteq.software.rssirecordernew.managers.ImageManipulationManager;
 import pl.mysteq.software.rssirecordernew.managers.MyWifiScannerManager;
 import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
@@ -55,6 +52,7 @@ import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
 import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
+import pl.mysteq.software.rssirecordernew.structures.Sector;
 
 public class ScanningActivity extends Activity implements SensorEventListener {
 
@@ -63,7 +61,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     public static final String LogTAG = "ScanningActivity";
     ImageManipulationManager markupsImageManipulationManager = null;
     ImageManipulationManager buildingPlanManipulationManager = null;
-    AutoScanManager autoScanManager = null;
+    //AutoScanManager autoScanManager = null;
     private IntentFilter filter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
     private BroadcastReceiver broadcast = new BroadcastReceiver(){
         @Override
@@ -81,7 +79,6 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     static final float alpha = 0.5f;
     float azimut;
     float degrees;
-    float degressWithOffset = 0;
     float lockedDegree = 0;
     float px,py;
     float offset = 0;
@@ -90,11 +87,14 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     Bitmap measuresBitmap = null;
     MyWifiScannerManager scannerManagerInstance = null;
     PlansFileManager plansFileManager = null;
+    //SectorManager sectorManager = null;
     String planName = null;
     String measureUUID = null;
     String measureName = null;
     MeasureBundle measureBundle = null;
     ArrayList<CustomScanResult> customScanResults;
+
+    Bitmap sourceBitmap = null;
 
     int currentMeasuresCounter = 0;
     int perDirectionMeasures = 0;
@@ -124,10 +124,10 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
 
 
-    boolean lockOrient = true;
+    //boolean lockOrient = true;
     ProgressDialog progressDialog = null;
     AlertDialog aboutCalibrationDialog = null;
-    CalibratorDialog calibratorDialog = null;
+   // CalibratorDialog calibratorDialog = null;
 
     @BindView(R.id.counterSummaryTextView) TextView counterTextView;
     @BindView(R.id.rightButton) Button startAutoMeasureButton;
@@ -143,7 +143,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        autoScanManager = new AutoScanManager();
+        //autoScanManager = new AutoScanManager();
+        //sectorManager = new SectorManager();
 
         //bindings
 
@@ -213,9 +214,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView,pointOnView);
                     px = (buildingPlanImageView.getScrollX()+buildingPlanImageView.getWidth()/(2*buildingPlanImageView.getScaleX()));
                     py = (buildingPlanImageView.getScrollY()+buildingPlanImageView.getHeight())/(2*buildingPlanImageView.getScaleY());
-                    //Log.d(LogTAG, String.format("px: %d, py: %d", px,py));
-                    //px = pointOnImage.x;
-                    //py = pointOnImage.y;
+
                     Log.d(LogTAG, String.format("px: %f, py: %f", px,py));
                     return true;
                    // return super.onSingleTapConfirmed(e);
@@ -235,18 +234,16 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     }
 
                     Point pointOnView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages), e);
-                    //Log.d(LogTAG, String.format("markup onSingleTapConfirmed. X: %d, Y: %d", pointOnView.x, pointOnView.y));
                     //gdzie tak na prawde klikłeś w obrazek
 
                     Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView, pointOnView);
 
-                    //Log.d(LogTAG, String.format("SectorX: %d SectorY: %d", sector_x,sector_y ));
-                    // px = pointOnImage.x;
-                    // py = pointOnImage.y;
-                    Log.d(LogTAG, String.format("On image: X: %d Y: %d, rotation: %f, px: %f, py: %f", pointOnImage.x, pointOnImage.y, degressWithOffset, px, py));
+
+                    Log.d(LogTAG, String.format("On image: X: %d Y: %d, px: %f, py: %f", pointOnImage.x, pointOnImage.y, px, py));
 
 
-                    if ( ! autoScanManager.isRunning()){
+
+                    if ( ! scannerManagerInstance.getAutoScanManager().isRunning()){
                         scannerManagerInstance.addMeasurePoint(customScanResults, pointOnImage, Math.round((degrees + calibrationOffset) % 360.f));
                     markupsImageManipulationManager.drawPoint(pointOnImage);
                     markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
@@ -271,7 +268,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     Point pointOnView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages),e );
                     Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView,pointOnView);
                     Log.d(LogTAG, String.format("Long press: x: %d, y: %d", pointOnImage.x,pointOnImage.y));
-                    sectorSelect(pointOnImage);
+                    selectSector(pointOnImage);
 
 
 
@@ -375,6 +372,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         scannerManagerInstance.stop();
         EventBus.getDefault().post(new ReloadBundlesEvent());
         Log.d(LogTAG,"calling onStop");
+        sourceBitmap.recycle();
         super.onStop();
 
     }
@@ -403,7 +401,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         Log.d(LogTAG,"plan filepath: "+planfile.getAbsolutePath());
         markupsImageManipulationManager = new ImageManipulationManager();
         buildingPlanManipulationManager = new ImageManipulationManager();
-        buildingPlanManipulationManager.setBitmap(BitmapFactory.decodeFile(planfile.getAbsolutePath()));
+        sourceBitmap = BitmapFactory.decodeFile(planfile.getAbsolutePath());
+        buildingPlanManipulationManager.setBitmap(sourceBitmap);
         buildingBitmap = buildingPlanManipulationManager.getBitmap();
         px = (buildingPlanImageView.getScrollX()+buildingPlanImageView.getWidth()/(2*buildingPlanImageView.getScaleX()));
         py = (buildingPlanImageView.getScrollY()+buildingPlanImageView.getHeight())/(2*buildingPlanImageView.getScaleY());
@@ -463,7 +462,6 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     }
     @Subscribe
     public void onMessage(WifiScanCompletedEvent event){
-        //customScanResults = (ArrayList<CustomScanResult>) scannerManagerInstance.getLastScanResult().clone();
         buildingPlanImageView.setEnabled(true);
         markupMeasuresImageView.setEnabled(true);
     }
@@ -491,20 +489,9 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                 SensorManager.getOrientation(R, orientation);
                 azimut = orientation[0]; // orientation contains: azimut, pitch and roll
                 degrees = ((float)Math.toDegrees(azimut)+180.f);
-                //degrees +=180.f;
-                //
+
                 lockedDegree = -degrees-offset;
-                if( !lockOrient) {
-                    //Log.d(LogTAG, String.format("azimuth: %f", degrees));
-                    degressWithOffset = (-degrees-offset );
-                    rotateBuildingView(degressWithOffset,px,py);
-
-                }
-                else{
-                    offset = degressWithOffset + lockedDegree;
-                }
-
-
+                offset = lockedDegree;
 
             }
 
@@ -513,23 +500,26 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
 
         //offsetTextView.setText(String.format("%.2f",lockedDegree));
-        degreesTextView.setText(String.format("%.2f",(degrees+calibrationOffset)%360.f));
+        //
         if (lockedRotation){
             float _fixedDegrees = MeasurePoint.rotationStickTo(degrees+calibrationOffset);
 
             directionImageButtton.setRotation(fixedRotation);
             offsetTextView.setText(MeasurePoint.rotationToString(_fixedDegrees));
             finalRotation = fixedRotation;
+
         }
         else{
-            //degreesTextView.setText(String.format("%.2f",(degrees+calibrationOffset)%360.f));
+
             directionImageButtton.setRotation(degrees+calibrationOffset);
             offsetTextView.setText(MeasurePoint.rotationToString(degrees+calibrationOffset));
             finalRotation = degrees+calibrationOffset;
+
         }
+        if(finalRotation < 0) {finalRotation = 360.f + finalRotation;}
+        degreesTextView.setText(String.format("%.2f",(finalRotation)%360.f));
 
 
-        //mCustomDrawableView.invalidate();
     }
     protected float[] lowPass( float[] input, float[] output ) {
 
@@ -543,115 +533,50 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
-    public void rotateBuildingView(float _degreesWithOffset, float _px, float _py){
-        //Log.d(LogTAG, String.format("Rotating: %f %f %f",degrees, _px,_py ));
-        //markupsImageManipulationManager.rotate(_degrees,_px,_py);
-        //buildingPlanManipulationManager.rotate(_degrees,_px,_py);
-        Matrix rotateMatrix = new Matrix();
-        //degressWithOffset = -_degrees+offset;
-        //rotateMatrix.setTranslate(_px,_py);
-        rotateMatrix.postRotate(_degreesWithOffset,_px,_py);
 
-        //rotateMatrix.preTranslate(_px,_py);
-
-        buildingPlanImageView.setImageMatrix(rotateMatrix);
-        markupMeasuresImageView.setImageMatrix(rotateMatrix);
-        //markupMeasuresImageView.setImageMatrix();
-        //markupMeasuresImageView.invalidate();
-        //buildingPlanImageView.invalidate();
-        //markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
-        //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
-
-    }
-/*
-    public void showCalibrator(){
-
-
-        calibratorDialog = new CalibratorDialog(this);
-
-        final SeekBar calibratorSeekBar = calibratorDialog.degreeSeekBar;
-        final TextView calibratorDegrees = calibratorDialog.degreesTextView;
-        final TextView generalTextView = calibratorDialog.generalTextView;
-        final ImageView calibratorImage = calibratorDialog.arrowImageView;
-        calibratorSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                //calibratorDegrees.setText(String.format("%d°", progress));
-                //float rotation = ((float)progress)/360.f;
-               /// Log.d(LogTAG, String.format("rotation: %f", rotation));
-
-            }
-
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-        //        calibratorImage.setRotation(degrees+calibrationOffset);
-        //        calibrationOffset = seekBar.getProgress();
-       //         calibratorDegrees.setText(String.format("%f",calibrationOffset ) );
-            }
-        });
-        calibratorDialog.create().show();
-        new CountDownTimer(5000, 50) {
-            float somethingCalledOffset = 0.f;
-            float newValue = 0.f;
-            float smoothedValue = 0;
-            @Override
-            public void onTick(long millisUntilFinished) {
-
-                somethingCalledOffset = (360 - degrees)%360;
-                smoothedValue += (somethingCalledOffset - smoothedValue) / 5;
-                Log.v(LogTAG, String.format("calibration offset: %f. smoothed: %f", somethingCalledOffset, smoothedValue));
-                calibratorImage.setRotation(degrees+somethingCalledOffset);
-                generalTextView.setText(String.format("00:%02d",millisUntilFinished/1000 ));
-                calibratorDegrees.setText(String.format("offset: %.2f", smoothedValue));
-
-            }
-
-            @Override
-            public void onFinish() {
-              //  info.setVisibility(View.GONE);
-                    calibrationOffset = smoothedValue;
-            }
-        }.start();
-
-    }
-*/
     @OnClick(R.id.rightButton) void startAutoMeasure()
     {
        Log.d(LogTAG,"startAutoMeasure onClick()");
-        if(autoScanManager.isPrepared()) {
+
+        if(scannerManagerInstance.getAutoScanManager().isPrepared()) {
             perDirectionMeasures = 0;
             //startAutoMeasureButton.setText("Scanning...");
             Toast.makeText(getApplicationContext(),"Scanning...",Toast.LENGTH_LONG).show();
-            autoScanManager.start();
+            scannerManagerInstance.getAutoScanManager().start();
 
         }
         else {
             Toast.makeText(getApplicationContext(),"Long press first on sector",Toast.LENGTH_SHORT).show();
         }
     }
-    public void sectorSelect(Point pointOnImage)
-    {
-        autoScanManager.setHookPoint(pointOnImage);
-        Point selectedSector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
-        markupsImageManipulationManager.setCurrentSector(selectedSector);
-        ArrayList<MeasurePoint> perSectorMeasurePoints = new ArrayList<>();
 
-        for (MeasurePoint _measurePoint: autoScanManager.getMeasurePoints()
+    public void selectSector(Point pointOnImage)
+    {
+
+      //  scannerManagerInstance.getAutoScanManager().setHookPoint(pointOnImage);
+        Point selectedSector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
+        scannerManagerInstance.getSectorManager().setCurrentSectorPoint(selectedSector);
+        markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
+        Sector _sector = scannerManagerInstance.getSectorManager().getCurrentSector();
+        selectedSectorTextView.setText(String.format("X%dY%d : %d",
+                _sector.getCoordinates().x,
+                _sector.getCoordinates().y ,_sector.size()));
+       // selectedSectorTextView.setText(String.format("X%dY%d : %d", selectedSector.x,selectedSector.y ,perSectorMeasurePoints.size()));
+    //   markupsImageManipulationManager.setCurrentSectorPoint(selectedSector);
+     /*   ArrayList<MeasurePoint> perSectorMeasurePoints = new ArrayList<>();
+
+        for (MeasurePoint _measurePoint: scannerManagerInstance.getAutoScanManager().getMeasurePoints()
              ) {
             if (_measurePoint.sector.equals(selectedSector)){
                 perSectorMeasurePoints.add(_measurePoint);
             }
         }
+*/
 
-
-        selectedSectorTextView.setText(String.format("X%dY%d : %d", selectedSector.x,selectedSector.y ,perSectorMeasurePoints.size()));
-        markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
+        //
+      //  markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
     }
+
 
     @OnClick(R.id.directionImageButton) void changeScanDirection() {
         fixedRotation = (fixedRotation+90.f)%360.f;

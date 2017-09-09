@@ -31,6 +31,8 @@ public final class MyWifiScannerManager {
     public static final String LogTAG = "MyWifiScannerManager";
     private ArrayList<CustomScanResult> lastScanResults = null;
     private Context context;
+    private SectorManager sectorManager = null;
+    private AutoScanManager autoScanManager = null;
     private WifiManager wifiManager;
     private WifiManager.WifiLock wifiLock;
     boolean initialized = false;
@@ -44,6 +46,7 @@ public final class MyWifiScannerManager {
     }
     private static synchronized MyWifiScannerManager getSync(){
         if(instance==null) instance = new MyWifiScannerManager();
+        Log.v(LogTAG,"new MyWifiScannerManager instance");
         return instance;
     }
 
@@ -52,27 +55,42 @@ public final class MyWifiScannerManager {
         //   this.measurePointArrayList = new ArrayList<MeasurePoint>();
         //  return this;
         //}
+        if(initialized){
+            Log.w(LogTAG,"Reinitialized");
+        }
+        else{
+            Log.w(LogTAG,"First initialize");
+        }
         this.context = _context.getApplicationContext();
         this.measurePointArrayList = new ArrayList<MeasurePoint>();
         wifiManager = (WifiManager) context.getSystemService(WIFI_SERVICE);
         wifiManager.setWifiEnabled(true);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_SCAN_ONLY, "RSSI_RECORDER_WIFI_LOCK");
         wifiLock.acquire();
+        sectorManager = new SectorManager();
+        autoScanManager = new AutoScanManager();
         if(! initialized) {
             Log.d(LogTAG,"registering to EventBus");
             EventBus.getDefault().register(this);
         }
-        Log.d(LogTAG,"Initialized");
+        Log.d(LogTAG,"Initialize done");
         initialized = true;
         return instance;
     }
     public void stop(){
+        if (wifiLock.isHeld()) {
             wifiLock.release();
+        }
     }
 
     public void scan(){
         //FIXME: #1 potencjalnie null pointer exception lub cos takiego!
         Log.d(LogTAG,"scan()");
+        if( ! wifiLock.isHeld()) {
+            Log.w(LogTAG,"wifiLock lost, acquiring again");
+            wifiLock.acquire();
+        }
+        Log.v(LogTAG,"starting scan");
         this.wifiManager.startScan();
 
     }
@@ -98,16 +116,26 @@ public final class MyWifiScannerManager {
         return lastScanResults;
     }
 
+    public void addMeasurePointToSector(ArrayList<CustomScanResult> scan,Point sector, int rotation ){
+        Log.d(LogTAG, String.format("Add measure point to sector: x=%d y=%d", sector.x,sector.y));
+        MeasurePoint measurePoint = new MeasurePoint();
+        measurePoint.scanResultArrayList = scan;
+        measurePoint.sector = sector;
+        measurePoint.set(-1,-1);
+        measurePoint.rotation = rotation;
+        sectorManager.getSector(sector).insertMeasurePoint(measurePoint);
+    }
     public MeasurePoint addMeasurePoint(ArrayList<CustomScanResult> list, Point point,int rotation){
         Log.d(LogTAG, String.format("add new measure: x: %d, y: %d, rotation: %d", point.x,point.y,rotation));
         MeasurePoint measurePoint = new MeasurePoint();
-        measurePoint.scanResultArrayList =(ArrayList<CustomScanResult>) list.clone();
+        measurePoint.scanResultArrayList = (ArrayList<CustomScanResult>) list.clone();
         measurePoint.set(point.x,point.y);
         measurePoint.rotation = rotation;
         this.measurePointArrayList.add(measurePoint);
         return measurePoint;
     }
     public void loadFromFile(File filepath){
+        Log.d(LogTAG,"loading from file: "+filepath.getAbsolutePath());
         JsonMeasuresReader reader = new JsonMeasuresReader();
         MeasureBundle _measureBundle = reader.run(filepath);
        // ArrayList<MeasurePoint> measures =
@@ -159,5 +187,13 @@ public final class MyWifiScannerManager {
     }
     public int getSize(){
         return measurePointArrayList.size();
+    }
+
+    public SectorManager getSectorManager() {
+        return sectorManager;
+    }
+
+    public AutoScanManager getAutoScanManager() {
+        return autoScanManager;
     }
 }

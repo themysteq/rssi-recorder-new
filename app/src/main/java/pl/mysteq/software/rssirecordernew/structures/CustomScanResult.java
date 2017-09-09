@@ -25,6 +25,7 @@ public class CustomScanResult {
         this.SSID = scanResult.SSID;
         this.level = scanResult.level;
     }
+
     public String toString()
     {
         return String.format("BSSID: %s, SSID: %s, level: %d", BSSID,SSID,level);
