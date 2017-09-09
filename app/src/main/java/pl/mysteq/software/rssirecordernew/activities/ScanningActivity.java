@@ -244,7 +244,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
 
                     if ( ! scannerManagerInstance.getAutoScanManager().isRunning()){
-                        scannerManagerInstance.addMeasurePoint(customScanResults, pointOnImage, Math.round((degrees + calibrationOffset) % 360.f));
+                        scannerManagerInstance.addMeasurePoint(customScanResults, pointOnImage, Math.round(finalRotation));
                     markupsImageManipulationManager.drawPoint(pointOnImage);
                     markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
 

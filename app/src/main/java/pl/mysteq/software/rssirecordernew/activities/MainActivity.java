@@ -237,6 +237,8 @@ public class MainActivity extends Activity {
                 selectedMeasureUUID = data.getStringExtra("MEASURE_UUID");
                 Log.d(LogTAG,"measure UUID = "+ selectedMeasureUUID);
                 continueLastMeasureButton.setEnabled(true);
+                EventBus.getDefault().post(new ReloadBundlesEvent());
+
             }
             else
             {
