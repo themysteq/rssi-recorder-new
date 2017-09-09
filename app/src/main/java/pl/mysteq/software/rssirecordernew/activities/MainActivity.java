@@ -9,6 +9,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -42,7 +43,9 @@ public class MainActivity extends Activity {
     private static final String LogTAG = "MainActivity";
     String selectedBundle = null;
     String selectedMeasureUUID = null;
-
+    private static final int MY_PERMISSIONS_REQUEST_WRITE_STORAGE = 1001;
+    private static final int MY_PERMISSIONS_REQUEST_LOCATION = 1002;
+    private static final int MY_PERMISSIONS_REQUEST_LOCATION_AND_STORAGE = 1003;
     //widgets
     Button planManagerButton;
     Button newMeasureButton;
@@ -69,12 +72,13 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        plansFileManager = PlansFileManager.getInstance();
+
+
         EventBus.getDefault().register(this);
         EventBus.getDefault().postSticky(new ReloadBundlesEvent());
         ButterKnife.bind(this);
-        Log.d(LogTAG,"ReloadBundlesEvent sent");
-
+        //Log.d(LogTAG,"ReloadBundlesEvent sent");
+        requestNeededPermissions();
         final SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
         selectedBundle = sharedPreferences.getString(SELECTED_PLANBUNDLE_KEY, null);
 
@@ -194,6 +198,7 @@ public class MainActivity extends Activity {
                 continueLastMeasureButton.setEnabled(false);
                 selectedMeasureUUID = null;
                 Log.d(LogTAG, "Received bundle name: " + selectedBundleName);
+                EventBus.getDefault().post(new ReloadBundlesEvent());
             }else
             {
                 Log.w(LogTAG,"No bundle selected!");
@@ -265,7 +270,7 @@ public class MainActivity extends Activity {
         progressDialog = new ProgressDialog(this,ProgressDialog.STYLE_SPINNER);
         progressDialog.setMessage("Loading...");
         progressDialog.setCancelable(false);
-        progressDialog.show();
+
     }
 
 
@@ -273,7 +278,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
-
+        progressDialog.show();
     }
 
     @Override
@@ -311,45 +316,100 @@ public class MainActivity extends Activity {
     public void onMessage(BundlesReloadedEvent event){
         progressDialog.dismiss();
     }
+    public boolean requestNeededPermissions(){
 
-
-    public  boolean haveStoragePermission() {
         if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
-                Log.e("Permission error","You have permission");
+                Log.i(LogTAG,"You already have permissions");
+                locationPermissionsHasBeenGranted();
+                storagePermissionsHasBeenGranted();
                 return true;
             } else {
 
-                Log.e("Permission error","You have asked for permission");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                Log.i(LogTAG,"You have asked for permission ACCESS_FINE_LOCATION");
+                ActivityCompat.requestPermissions(this, new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE},MY_PERMISSIONS_REQUEST_LOCATION_AND_STORAGE );
                 return false;
             }
         }
         else { //you dont need to worry about these stuff below api level 23
-            Log.e("Permission error","You already have the permission");
+            Log.e(LogTAG,"You already have the permission because api level < 23");
+            locationPermissionsHasBeenGranted();
+            storagePermissionsHasBeenGranted();
             return true;
         }
     }
+    /*
+    public boolean haveLocationPermission(){
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+                Log.i(LogTAG,"You already have permission ACCESS_FINE_LOCATION");
+                locationPermissionsHasBeenGranted();
+                return true;
+            } else {
+
+                Log.i(LogTAG,"You have asked for permission ACCESS_FINE_LOCATION");
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},MY_PERMISSIONS_REQUEST_LOCATION );
+                return false;
+            }
+        }
+        else { //you dont need to worry about these stuff below api level 23
+            Log.e(LogTAG,"You already have the permission");
+            locationPermissionsHasBeenGranted();
+            return true;
+        }
+    }
+    public  boolean haveStoragePermission() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                Log.i(LogTAG,"You already have permission WRITE_EXTERNAL_STORAGE");
+                storagePermissionsHasBeenGranted();
+                return true;
+            } else {
+
+                Log.e(LogTAG,"You have asked for permission WRITE_EXTERNAL_STORAGE");
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},MY_PERMISSIONS_REQUEST_WRITE_STORAGE );
+                return false;
+            }
+        }
+        else { //you dont need to worry about these stuff below api level 23
+            Log.i(LogTAG,"You already have permission WRITE_EXTERNAL_STORAGE");
+            storagePermissionsHasBeenGranted();
+            return true;
+        }
+    }
+    */
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if(grantResults[0]== PackageManager.PERMISSION_GRANTED){
-            //you have the permission now.
-           /* DownloadManager.Request request = new DownloadManager.Request(Uri.parse(myurl));
-            request.setTitle("Vertretungsplan");
-            request.setDescription("wird heruntergeladen");
-            request.allowScanningByMediaScanner();
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            String filename = URLUtil.guessFileName(myurl, null, MimeTypeMap.getFileExtensionFromUrl(myurl));
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
-            DownloadManager manager = (DownloadManager) c.getSystemService(Context.DOWNLOAD_SERVICE);
-            manager.enqueue(request);
-            */
-        }
-        else
-        {
-
+        Log.d(LogTAG,"onRequestPermissionsResult");
+        if(requestCode == MY_PERMISSIONS_REQUEST_LOCATION_AND_STORAGE){
+            if( grantResults.length == 2){
+                if(grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED){
+                    locationPermissionsHasBeenGranted();
+                    storagePermissionsHasBeenGranted();
+                }
+                else {
+                    Log.e(LogTAG,"Location or storage permissions denied");
+                    finishAndRemoveTask();
+                }
+            }
         }
     }
+    private void storagePermissionsHasBeenGranted(){
+
+        Log.i(LogTAG,"Storage permissions granted");
+        plansFileManager = PlansFileManager.getInstance();
+        //EventBus.getDefault().postSticky(new ReloadBundlesEvent());
+    }
+    private void locationPermissionsHasBeenGranted(){
+        Log.i(LogTAG,"Location permissions granted");
+    }
+
+
 }

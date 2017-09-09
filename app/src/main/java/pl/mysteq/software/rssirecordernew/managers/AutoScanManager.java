@@ -34,6 +34,7 @@ public class AutoScanManager {
     private TimerTask timerTask = null;
     private Timer timer = null;
     private Point hookPoint = null;
+    private Point sector = null;
     private ArrayList<MeasurePoint> measurePoints = null;
     public AutoScanManager()
     {

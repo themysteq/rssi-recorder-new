@@ -4,11 +4,16 @@ package pl.mysteq.software.rssirecordernew;
 import android.graphics.Point;
 import android.util.Log;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.Implements;
+import org.robolectric.shadows.ShadowLog;
 
 import pl.mysteq.software.rssirecordernew.managers.SectorManager;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
@@ -24,16 +29,27 @@ import static org.junit.Assert.*;
 public class SectorManagerTest {
 
 
+    @Before
+    public void setUp()
+    {
+        ShadowLog.stream = System.out;
+
+    }
+
+
+
     @Test
     public void countingSectors_isOkay(){
+
+       // Robolectric.bindShadowClass(ShadowLog.class);
 
         SectorManager sectorManager = new SectorManager();
         Sector sector1 = new Sector(new Point(3,4));
         Sector sector2 = new Sector(new Point(3,5));
-        Sector sector3 = new Sector(new Point(3,5));
+        //Sector sector3 = new Sector(new Point(3,5));
         sectorManager.insertSector(sector1);
         sectorManager.insertSector(sector2);
-        sectorManager.insertSector(sector3);
+        //sectorManager.insertSector(sector3);
         assertEquals(2,sectorManager.countAllSectors());
 
     }
@@ -42,6 +58,8 @@ public class SectorManagerTest {
     public void getSector_isOkay(){
         SectorManager sectorManager = new SectorManager();
         Sector sector1 = new Sector(new Point(1,7));
+        sectorManager.insertSector(sector1);
+        assertNotNull(sectorManager.getSector(new Point(1,7)));
 
     }
     @Test
@@ -61,12 +79,34 @@ public class SectorManagerTest {
         Sector sector1 = new Sector(new Point(4,5));
         //Sector sector2 = new Sector(new Point(4,6));
         sectorManager.insertSector(sector1);
-        assertNull(sectorManager.getSector(new Point(4,6)));
+        assertNotNull(sectorManager.getSector(new Point(4,6)));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void replaceSector_ShouldReturnException()
+    {
+        SectorManager sectorManager = new SectorManager();
+        Sector sector1 = new Sector(new Point(4,5));
+        sectorManager.insertSector(sector1);
+       sectorManager.insertSector(new Sector(new Point(4,5)));
+
+       // sectorManager.insertSector(sector1);
+       // sectorManager.insertSector(sector2);
+       // assertNotNull(sectorManager.getSector(new Point(4,6)));
     }
 
     @Test
-    public void queryingNoSectors(){
+    public void queryingEmptySector(){
         SectorManager sectorManager = new SectorManager();
-        assertNull( sectorManager.getSector(new Point(5,7)));
+        Sector sector1 = new Sector( new Point(5,10));
+        sectorManager.insertSector(sector1);
+        assertNotNull( sectorManager.getSector(new Point(5,8)));
     }
+
+    @Test
+    public void testTimeOfCreation(){
+        SectorManager sectorManager = new SectorManager();
+    }
+
+
 }
