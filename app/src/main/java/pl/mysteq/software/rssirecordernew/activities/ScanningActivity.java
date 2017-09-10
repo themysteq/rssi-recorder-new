@@ -5,9 +5,9 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -56,6 +56,8 @@ import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 import pl.mysteq.software.rssirecordernew.structures.Sector;
 
+import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
+
 public class ScanningActivity extends Activity implements SensorEventListener {
 
 
@@ -76,14 +78,21 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         }
 
     };
-    float[] mGravity;
-    float[] mGeomagnetic;
+    SharedPreferences sharedPreferences = null;
+    //public static final String SHAREDPREF_SCANNING = "rssi_recorder_scanning_prefs";
+    public static final String OFFSET_VALUE_KEY = "offset_value";
+    //float[] mGravity;
+    //float[] mGeomagnetic;
     static final float alpha = 0.5f;
-    float azimut;
-    float degrees;
-    float lockedDegree = 0;
+    //float azimut;
+    public static float degrees;
+    //float lockedDegree = 0;
     float px,py;
-    float offset = 0;
+    //float offset = 0;
+    private int mAzimuth = 0; // degree
+
+    float[] orientation = new float[3];
+    float[] rMat = new float[9];
 
     Bitmap buildingBitmap = null;
     Bitmap measuresBitmap = null;
@@ -112,6 +121,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     SensorManager mSensorManager ;
     Sensor accelerometer;
     Sensor magnetometer;
+    Sensor rotatiometer;
     //widgets
     SeekBar zoomBar = null;
     ImageView markupMeasuresImageView = null;
@@ -143,10 +153,12 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         setContentView(R.layout.activity_scanning);
         ButterKnife.bind(this);
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        rotatiometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         //autoScanManager = new AutoScanManager();
         //sectorManager = new SectorManager();
+
 
         //bindings
 
@@ -155,22 +167,6 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         mostRightButton.setEnabled(false);
 
         scannerManagerInstance.loadFromFile(new File(PlansFileManager.getInstance().getAppExternalMeasuresFolder(),measureFullPath));
-        /*
-        ArrayList<MeasurePoint> measurePointArrayList = scannerManagerInstance.get;
-        if (measurePointArrayList.size() > 0) {
-            for (MeasurePoint measurePoint : measurePointArrayList)
-            {
-                markupsImageManipulationManager.drawPoint(measurePoint);
-
-            }
-            markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
-            Log.d(LogTAG,"Drawing points done");
-        }
-        else
-        {
-            Log.i(LogTAG,"Empty measure file when loading");
-        }
-        */
         progressDialog.dismiss();
         aboutCalibrationDialog.show();
         counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getSectorManager().getMeasuresCounter()));
@@ -338,8 +334,9 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     protected void onResume()
     {
         super.onResume();
-        mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
-        mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
+       // mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+      //  mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
+        mSensorManager.registerListener(this, rotatiometer, SensorManager.SENSOR_DELAY_FASTEST);
         try {
             registerReceiver(broadcast,filter);
         }
@@ -385,6 +382,15 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     public void onContentChanged() {
         super.onContentChanged();
 
+        sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
+        Log.d(LogTAG,"Getting shared preferences");
+        calibrationOffset = sharedPreferences.getInt(OFFSET_VALUE_KEY,0);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setCancelable(false);
+        alertDialogBuilder.setMessage("Remember about the calibration setup!");
+        alertDialogBuilder.setTitle("See settings for calibration. Current offset: "+Integer.toString(Math.round(calibrationOffset)));
+        alertDialogBuilder.setPositiveButton("Continue",null);
+
         zoomBar = (SeekBar) findViewById(R.id.zoomSeekBar);
         scanButton = (Button) findViewById(R.id.leftButton);
         markupMeasuresImageView = (ImageView) findViewById(R.id.markupMeasuresImageView);
@@ -424,35 +430,13 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         mostRightButton = (Button) findViewById(R.id.mostRightButton);
 
         degreesTextView = (TextView) findViewById(R.id.degreesTextView);
-        offsetTextView = (TextView) findViewById(R.id.offsetTextView);
+        offsetTextView = (TextView) findViewById(R.id.directionTextView);
 
         progressDialog = new ProgressDialog(this,ProgressDialog.STYLE_SPINNER);
         progressDialog.setMessage("Loading...");
         progressDialog.setCancelable(false);
         progressDialog.show();
-
-
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        alertDialogBuilder.setCancelable(false);
-        alertDialogBuilder.setMessage("Remember about the calibration setup!");
-        alertDialogBuilder.setTitle("Calibration?");
-        alertDialogBuilder.setPositiveButton("Continue",null);
-
-        alertDialogBuilder.setNegativeButton("Calibrate", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-            //    Log.d(LogTAG, String.format("Calibrate: Clicked %d button", which ));
-                    //showCalibrator();
-            }
-        });
         aboutCalibrationDialog = alertDialogBuilder.create();
-
-
-
-
-
-
-
     }
 
     protected Point getRelativePosition(View v, MotionEvent event) {
@@ -473,70 +457,32 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     public void onMessage(SubmitAutoScanEvent event){
         counterTextView.setText(String.format("Measures. Current:%d Total submitted:%d", event.counter, scannerManagerInstance.getSectorManager().getMeasuresCounter()));
     }
-
-
     @Override
     public void onSensorChanged(SensorEvent event) {
-
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-            mGravity = lowPass(event.values.clone(),mGravity);
-            //mGravity = event.values;
-        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-            mGeomagnetic = lowPass(event.values.clone(),mGeomagnetic);
-            //mGeomagnetic = event.values;
-        if (mGravity != null && mGeomagnetic != null) {
-            float R[] = new float[9];
-            float I[] = new float[9];
-            boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-            if (success) {
-                float orientation[] = new float[3];
-                SensorManager.getOrientation(R, orientation);
-                azimut = orientation[0]; // orientation contains: azimut, pitch and roll
-                degrees = ((float)Math.toDegrees(azimut)+180.f);
-
-                lockedDegree = -degrees-offset;
-                offset = lockedDegree;
-
-            }
-
-
+        if( event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR ){
+            // calculate th rotation matrix
+            SensorManager.getRotationMatrixFromVector( rMat, event.values );
+            // get the azimuth value (orientation[0]) in degree
+            mAzimuth = (int) ( Math.toDegrees( SensorManager.getOrientation( rMat, orientation )[0] ) + 360 ) % 360;
+                degrees = (360 + mAzimuth)%360;
         }
-
-
-        //offsetTextView.setText(String.format("%.2f",lockedDegree));
-        //
-        if (lockedRotation){
-            float _fixedDegrees = MeasurePoint.rotationStickTo(degrees+calibrationOffset);
-
-            directionImageButtton.setRotation(fixedRotation);
-            offsetTextView.setText(MeasurePoint.rotationToString(_fixedDegrees));
-            finalRotation = fixedRotation;
-
-        }
-        else{
-
-            directionImageButtton.setRotation(degrees+calibrationOffset);
-            offsetTextView.setText(MeasurePoint.rotationToString(degrees+calibrationOffset));
-            finalRotation = degrees+calibrationOffset;
-
-        }
-        if(finalRotation < 0) {finalRotation = 360.f + finalRotation;}
-        degreesTextView.setText(String.format("%.2f",(finalRotation)%360.f));
-
-
+        finalRotation = degrees+calibrationOffset;
+        //directionImageButtton.setRotation(finalRotation);
+        directionImageButtton.setRotation(finalRotation);
+        degreesTextView.setText(Float.toString(finalRotation));
+        offsetTextView.setText(MeasurePoint.rotationToString(finalRotation));
     }
+    /*
     protected float[] lowPass( float[] input, float[] output ) {
-
         if ( output == null ) return input;
         for ( int i=0; i<input.length; i++ ) {
             output[i] = output[i] + alpha * (input[i] - output[i]);
         }
         return output;
     }
+    */
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     @OnClick(R.id.rightButton) void startAutoMeasure()
     {
@@ -547,39 +493,32 @@ public class ScanningActivity extends Activity implements SensorEventListener {
             //startAutoMeasureButton.setText("Scanning...");
             Toast.makeText(getApplicationContext(),"Scanning...",Toast.LENGTH_LONG).show();
             scannerManagerInstance.getAutoScanManager().start();
-
-        }
-        else {
+        } else {
             Toast.makeText(getApplicationContext(),"Long press first on sector",Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void selectSector(Point pointOnImage)
-    {
+    public void selectSector(Point pointOnImage) {
         EventBus.getDefault().post(new RefreshStatisticsEvent());
         SectorPoint selectedSector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
         scannerManagerInstance.getSectorManager().setCurrentSectorPoint(selectedSector);
         scannerManagerInstance.getLastScanResult();
         markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
-
     }
 
 
     @OnClick(R.id.directionImageButton) void changeScanDirection() {
         fixedRotation = (fixedRotation+90.f)%360.f;
         directionImageButtton.setRotation(fixedRotation);
-        if (!lockedRotation)
-        {
-            Log.d(LogTAG, String.format("old calibration offset = %.0f", calibrationOffset));
-            calibrationOffset = (fixedRotation - degrees)%360.f;
-            Log.d(LogTAG, String.format("new calibration offset = %.0f", calibrationOffset));
-        }
-        Log.d(LogTAG, String.format("changeDirection(): %.1f", fixedRotation));
-
+        Log.d(LogTAG, String.format("old calibration offset = %.0f", calibrationOffset));
+        calibrationOffset = (fixedRotation - degrees)%360.f;
+        Log.d(LogTAG, String.format("new calibration offset = %.0f", calibrationOffset));
     }
-    @OnLongClick(R.id.directionImageButton) boolean lockScanDirection() {
-        Log.d(LogTAG,"lockDirection()");
-        lockedRotation = ! lockedRotation;
+    @OnLongClick(R.id.directionImageButton) boolean saveOffset() {
+        Log.d(LogTAG,"saveOffset()");
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(OFFSET_VALUE_KEY,Math.round(calibrationOffset));
+        editor.apply();
         return true; //long click is not simple click
     }
     @Subscribe(threadMode = ThreadMode.MAIN)

@@ -77,6 +77,17 @@ public class SectorManager {
         }
         return count;
     }
+    public ArrayList<Sector> getAllSectorsArrayList(){
+        ArrayList<Sector> sectorArrayList = new ArrayList<>();
+        Set<Integer> columns = sectors.keySet();
+        for(Integer x : columns){
+            for(Integer y : sectors.get(x).keySet())
+            {
+                sectorArrayList.add(sectors.get(x).get(y));
+            }
+        }
+        return  sectorArrayList;
+    }
     public void insertMeasureToCurrentSector(MeasurePoint _measurePoint){
            getCurrentSector().insertMeasurePoint(_measurePoint);
             measuresCounter++;

@@ -1,5 +1,6 @@
 package pl.mysteq.software.rssirecordernew.structures;
 
+import android.graphics.Color;
 import android.graphics.Point;
 import android.util.Log;
 
@@ -54,5 +55,10 @@ public class Sector {
         return measurePoints;
     }
 
-
+    public int getColor()
+    {
+        if (this.size() == 0 ) return Color.RED;
+        if (this.size() >= 40) return Color.GREEN;
+        else return Color.YELLOW;
+    }
 }

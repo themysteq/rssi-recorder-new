@@ -1,6 +1,7 @@
 package pl.mysteq.software.rssirecordernew.structures;
 
 import android.graphics.Point;
+import android.util.Log;
 
 import com.google.gson.annotations.SerializedName;
 
@@ -51,12 +52,23 @@ public class MeasurePoint extends Point {
 
     public static String rotationToString(float _rotationDegrees)
     {
-        float margin = 35.f;
-        if (_rotationDegrees > (360-margin) || _rotationDegrees < (margin)) { return "^12_00^";}
-        else if(_rotationDegrees > (90-margin) && _rotationDegrees < (90+margin)) {return ">3_00>";}
-        else if( _rotationDegrees > (180-margin) && _rotationDegrees < (180+margin)) {return "v6_00v";}
-        else if( _rotationDegrees > (270-margin) && _rotationDegrees < (270+margin)){ return "<9_00<";}
+
+        float margin = 30.f;
+        float value = (360+_rotationDegrees)%360;
+
+       // Log.v("rotationToString",Float.toString(value));
+        if (value > (360-margin) || value < (margin)) { return "/\\";}
+        else if(value > (90-margin) && value < (90+margin)) {return "-->>";}
+        else if( value > (180-margin) && value < (180+margin)) {return "\\/";}
+        else if( value > (270-margin) && value < (270+margin)){ return "<<--";}
         else{ return "????";}
+
+        /*
+        if (( value > 0-margin) && (_rotationDegrees < 0+margin)){ return "/\\";}
+        else if (( _rotationDegrees > 90-margin) && (_rotationDegrees < 90+margin)){return "-->>";}
+        else if (( _rotationDegrees > 270-margin) && (_rotationDegrees < 270+margin)) { return "<<--";}
+        else if (( _rotationDegrees (margin/2))
+        */
 
     }
     public static float rotationStickTo(float _rotationDegrees)

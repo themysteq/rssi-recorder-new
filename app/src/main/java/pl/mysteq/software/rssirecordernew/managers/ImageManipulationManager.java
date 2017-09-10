@@ -91,6 +91,18 @@ public class ImageManipulationManager {
     {
         return this.bitmap;
     }
+    public void redrawSectors(){
+        Paint sectorPaint = new Paint();
+        sectorPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        sectorPaint.setStrokeJoin(Paint.Join.ROUND);
+        Rect drawRectSector = null;
+        ArrayList<Sector>_sectors = MyWifiScannerManager.getInstance().getSectorManager().getAllSectorsArrayList();
+        for (Sector sector : _sectors){
+            drawRectSector =  getRectFromSector(sector);
+            sectorPaint.setColor(sector.getColor());
+            this.canvas.drawRect(drawRectSector,sectorPaint);
+        }
+    }
     public Bitmap getWithSectorBitmap()
     {
        // this.canvas.setBitmap(this.bitmap);
