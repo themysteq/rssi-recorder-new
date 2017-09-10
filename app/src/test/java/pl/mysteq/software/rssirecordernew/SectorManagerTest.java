@@ -15,6 +15,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.Implements;
 import org.robolectric.shadows.ShadowLog;
 
+import pl.mysteq.software.rssirecordernew.extendables.SectorPoint;
 import pl.mysteq.software.rssirecordernew.managers.SectorManager;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.Sector;
@@ -44,8 +45,8 @@ public class SectorManagerTest {
        // Robolectric.bindShadowClass(ShadowLog.class);
 
         SectorManager sectorManager = new SectorManager();
-        Sector sector1 = new Sector(new Point(3,4));
-        Sector sector2 = new Sector(new Point(3,5));
+        Sector sector1 = new Sector(new SectorPoint(3,4));
+        Sector sector2 = new Sector(new SectorPoint(3,5));
         //Sector sector3 = new Sector(new Point(3,5));
         sectorManager.insertSector(sector1);
         sectorManager.insertSector(sector2);
@@ -57,16 +58,16 @@ public class SectorManagerTest {
     @Test
     public void getSector_isOkay(){
         SectorManager sectorManager = new SectorManager();
-        Sector sector1 = new Sector(new Point(1,7));
+        Sector sector1 = new Sector(new SectorPoint(1,7));
         sectorManager.insertSector(sector1);
-        assertNotNull(sectorManager.getSector(new Point(1,7)));
+        assertNotNull(sectorManager.getSector(new SectorPoint(1,7)));
 
     }
     @Test
     public void replacingSector_isNotRepleacable(){
         SectorManager sectorManager = new SectorManager();
-        Sector sector1 = new Sector(new Point(3,4));
-        Sector sector2 = new Sector(new Point(3,5));
+        Sector sector1 = new Sector(new SectorPoint(3,4));
+        Sector sector2 = new Sector(new SectorPoint(3,5));
         sector2.insertMeasurePoint(new MeasurePoint());
         sectorManager.insertSector(sector1);
         sectorManager.insertSector(sector2);
@@ -76,19 +77,19 @@ public class SectorManagerTest {
     @Test
     public void queryingEmptyRow(){
         SectorManager sectorManager = new SectorManager();
-        Sector sector1 = new Sector(new Point(4,5));
+        Sector sector1 = new Sector(new SectorPoint(4,5));
         //Sector sector2 = new Sector(new Point(4,6));
         sectorManager.insertSector(sector1);
-        assertNotNull(sectorManager.getSector(new Point(4,6)));
+        assertNotNull(sectorManager.getSector(new SectorPoint(4,6)));
     }
 
     @Test(expected = IllegalStateException.class)
     public void replaceSector_ShouldReturnException()
     {
         SectorManager sectorManager = new SectorManager();
-        Sector sector1 = new Sector(new Point(4,5));
+        Sector sector1 = new Sector(new SectorPoint(4,5));
         sectorManager.insertSector(sector1);
-       sectorManager.insertSector(new Sector(new Point(4,5)));
+       sectorManager.insertSector(new Sector(new SectorPoint(4,5)));
 
        // sectorManager.insertSector(sector1);
        // sectorManager.insertSector(sector2);
@@ -98,9 +99,9 @@ public class SectorManagerTest {
     @Test
     public void queryingEmptySector(){
         SectorManager sectorManager = new SectorManager();
-        Sector sector1 = new Sector( new Point(5,10));
+        Sector sector1 = new Sector( new SectorPoint(5,10));
         sectorManager.insertSector(sector1);
-        assertNotNull( sectorManager.getSector(new Point(5,8)));
+        assertNotNull( sectorManager.getSector(new SectorPoint(5,8)));
     }
 
     @Test

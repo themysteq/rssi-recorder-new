@@ -42,9 +42,11 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnLongClick;
 import pl.mysteq.software.rssirecordernew.R;
+import pl.mysteq.software.rssirecordernew.events.RefreshStatisticsEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.SubmitAutoScanEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompletedEvent;
+import pl.mysteq.software.rssirecordernew.extendables.SectorPoint;
 import pl.mysteq.software.rssirecordernew.managers.ImageManipulationManager;
 import pl.mysteq.software.rssirecordernew.managers.MyWifiScannerManager;
 import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
@@ -101,7 +103,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
     float calibrationOffset = 0;
     float calbratedRotation = 0;
-    float finalRotation = 0;
+    public static float finalRotation = 0;
 
     float fixedRotation = 0;
     boolean lockedRotation = false;
@@ -153,7 +155,8 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         mostRightButton.setEnabled(false);
 
         scannerManagerInstance.loadFromFile(new File(PlansFileManager.getInstance().getAppExternalMeasuresFolder(),measureFullPath));
-        ArrayList<MeasurePoint> measurePointArrayList = scannerManagerInstance.getMeasurePointArrayList();
+        /*
+        ArrayList<MeasurePoint> measurePointArrayList = scannerManagerInstance.get;
         if (measurePointArrayList.size() > 0) {
             for (MeasurePoint measurePoint : measurePointArrayList)
             {
@@ -167,9 +170,10 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         {
             Log.i(LogTAG,"Empty measure file when loading");
         }
+        */
         progressDialog.dismiss();
         aboutCalibrationDialog.show();
-        counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getMeasuresCount()));
+        counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getSectorManager().getMeasuresCounter()));
 
 
         zoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -251,7 +255,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
                     //Update counters and display them
                     currentMeasuresCounter++;
-                    counterTextView.setText(String.format("Measures. Current:%d Total:%d", currentMeasuresCounter, scannerManagerInstance.getMeasuresCount()));
+                    counterTextView.setText(String.format("Measures. Current:%d Total:%d", currentMeasuresCounter, scannerManagerInstance.getSectorManager().getMeasuresCounter()));
                 }
                 else {
                         Toast.makeText(getApplicationContext(),"Autoscanning is running!",Toast.LENGTH_SHORT).show();
@@ -467,7 +471,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     }
     @Subscribe (threadMode = ThreadMode.MAIN)
     public void onMessage(SubmitAutoScanEvent event){
-        counterTextView.setText(String.format("Measures. Current:%d Total:%d", event.counter, scannerManagerInstance.getMeasuresCount()));
+        counterTextView.setText(String.format("Measures. Current:%d Total submitted:%d", event.counter, scannerManagerInstance.getSectorManager().getMeasuresCounter()));
     }
 
 
@@ -552,29 +556,12 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
     public void selectSector(Point pointOnImage)
     {
-
-      //  scannerManagerInstance.getAutoScanManager().setHookPoint(pointOnImage);
-        Point selectedSector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
+        EventBus.getDefault().post(new RefreshStatisticsEvent());
+        SectorPoint selectedSector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
         scannerManagerInstance.getSectorManager().setCurrentSectorPoint(selectedSector);
+        scannerManagerInstance.getLastScanResult();
         markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
-        Sector _sector = scannerManagerInstance.getSectorManager().getCurrentSector();
-        selectedSectorTextView.setText(String.format("X%dY%d : %d",
-                _sector.getCoordinates().x,
-                _sector.getCoordinates().y ,_sector.size()));
-       // selectedSectorTextView.setText(String.format("X%dY%d : %d", selectedSector.x,selectedSector.y ,perSectorMeasurePoints.size()));
-    //   markupsImageManipulationManager.setCurrentSectorPoint(selectedSector);
-     /*   ArrayList<MeasurePoint> perSectorMeasurePoints = new ArrayList<>();
 
-        for (MeasurePoint _measurePoint: scannerManagerInstance.getAutoScanManager().getMeasurePoints()
-             ) {
-            if (_measurePoint.sector.equals(selectedSector)){
-                perSectorMeasurePoints.add(_measurePoint);
-            }
-        }
-*/
-
-        //
-      //  markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
     }
 
 
@@ -595,6 +582,17 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         lockedRotation = ! lockedRotation;
         return true; //long click is not simple click
     }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void OnMessage(RefreshStatisticsEvent event){
+        Log.v(LogTAG,"RefreshStatisticsEvent received");
+        Sector _sector = scannerManagerInstance.getSectorManager().getCurrentSector();
+        counterTextView.setText(String.format("Measures. Current:%d Total submitted:%d",
+                //_sector.size(),
+                0,
+                scannerManagerInstance.getSectorManager().getMeasuresCounter() ));
+        selectedSectorTextView.setText(String.format("X%d_Y%d: %d", _sector.getCoordinates().x,_sector.getCoordinates().y, _sector.size()));
 
+
+    }
 
 }

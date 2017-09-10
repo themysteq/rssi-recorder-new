@@ -13,12 +13,16 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.File;
 import java.util.ArrayList;
 
+import pl.mysteq.software.rssirecordernew.events.AutoScanCompletedEvent;
 import pl.mysteq.software.rssirecordernew.events.PerformWifiScanEvent;
+import pl.mysteq.software.rssirecordernew.events.RefreshStatisticsEvent;
 import pl.mysteq.software.rssirecordernew.events.SaveMeasuresEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompletedEvent;
 import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
 import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
+import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
+import pl.mysteq.software.rssirecordernew.structures.Sector;
 
 import static android.content.Context.WIFI_SERVICE;
 
@@ -37,7 +41,7 @@ public final class MyWifiScannerManager {
     private WifiManager.WifiLock wifiLock;
     boolean initialized = false;
 
-    private ArrayList<MeasurePoint> measurePointArrayList = null;
+   // private ArrayList<MeasurePoint> measurePointArrayList = null;
     private static MyWifiScannerManager instance = null;
 
     public static MyWifiScannerManager getInstance(){
@@ -62,7 +66,7 @@ public final class MyWifiScannerManager {
             Log.w(LogTAG,"First initialize");
         }
         this.context = _context.getApplicationContext();
-        this.measurePointArrayList = new ArrayList<MeasurePoint>();
+       // this.measurePointArrayList = new ArrayList<MeasurePoint>();
         wifiManager = (WifiManager) context.getSystemService(WIFI_SERVICE);
         wifiManager.setWifiEnabled(true);
         wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_SCAN_ONLY, "RSSI_RECORDER_WIFI_LOCK");
@@ -115,7 +119,7 @@ public final class MyWifiScannerManager {
     public ArrayList<CustomScanResult> getLastScanResult(){
         return lastScanResults;
     }
-
+/*
     public void addMeasurePointToSector(ArrayList<CustomScanResult> scan,Point sector, int rotation ){
         Log.d(LogTAG, String.format("Add measure point to sector: x=%d y=%d", sector.x,sector.y));
         MeasurePoint measurePoint = new MeasurePoint();
@@ -125,13 +129,15 @@ public final class MyWifiScannerManager {
         measurePoint.rotation = rotation;
         sectorManager.getSector(sector).insertMeasurePoint(measurePoint);
     }
-    public MeasurePoint addMeasurePoint(ArrayList<CustomScanResult> list, Point point,int rotation){
-        Log.d(LogTAG, String.format("add new measure: x: %d, y: %d, rotation: %d", point.x,point.y,rotation));
+    */
+    public MeasurePoint addMeasurePoint(ArrayList<CustomScanResult> list, Point pointOnImage,int rotation){
+        Log.d(LogTAG, String.format("add new measure: x: %d, y: %d, rotation: %d", pointOnImage.x,pointOnImage.y,rotation));
         MeasurePoint measurePoint = new MeasurePoint();
         measurePoint.scanResultArrayList = (ArrayList<CustomScanResult>) list.clone();
-        measurePoint.set(point.x,point.y);
+        measurePoint.set(-2,-2);
         measurePoint.rotation = rotation;
-        this.measurePointArrayList.add(measurePoint);
+        measurePoint.sector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
+        this.sectorManager.insertMeasureToSector(PlanBundle.getSectorFromPointOnImage(pointOnImage),measurePoint);
         return measurePoint;
     }
     public void loadFromFile(File filepath){
@@ -139,7 +145,8 @@ public final class MyWifiScannerManager {
         JsonMeasuresReader reader = new JsonMeasuresReader();
         MeasureBundle _measureBundle = reader.run(filepath);
        // ArrayList<MeasurePoint> measures =
-        measurePointArrayList = _measureBundle.getMeasures();
+        this.getSectorManager().loadAllMeasures( _measureBundle.getMeasures());
+
     }
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
@@ -156,22 +163,29 @@ public final class MyWifiScannerManager {
 
 
         MeasureBundle measureBundle = new MeasureBundle(planName);
-        measureBundle.setMeasures(this.measurePointArrayList);
+        Log.d(LogTAG,"rewriting ");
+        //FIXME: WHAT CAN GO WRONG?!
+        ArrayList<MeasurePoint> _measuresFromSectors = this.sectorManager.getAllMeasures();
+       // measureBundle.setMeasures(this.measurePointArrayList);
         JsonMeasuresWriter writer = new JsonMeasuresWriter(measureBundle);
         writer.run();
         Log.d(LogTAG,"saving "+filepath);
     }
+    /*
     public int getMeasuresCount(){
         return this.measurePointArrayList.size();
     }
+    */
     public void saveToFile(MeasureBundle measureBundle)
     {
-        measureBundle.setMeasures(this.measurePointArrayList);
+        ArrayList<MeasurePoint> _measuresFromSectors = this.sectorManager.getAllMeasures();
+        measureBundle.setMeasures(_measuresFromSectors);
         //measureBundle.setLastChanged();
         JsonMeasuresWriter writer = new JsonMeasuresWriter(measureBundle);
         writer.run();
         Log.d(LogTAG,"saved "+measureBundle.getFilepath());
     }
+    /*
     public void clear()
     {
         if(measurePointArrayList != null){
@@ -181,14 +195,17 @@ public final class MyWifiScannerManager {
             measurePointArrayList = new ArrayList<MeasurePoint>();
         }
     }
-
+*/
+    /*
     public ArrayList<MeasurePoint> getMeasurePointArrayList() {
         return measurePointArrayList;
     }
+    */
+    /*
     public int getSize(){
         return measurePointArrayList.size();
     }
-
+*/
     public SectorManager getSectorManager() {
         return sectorManager;
     }
@@ -196,4 +213,25 @@ public final class MyWifiScannerManager {
     public AutoScanManager getAutoScanManager() {
         return autoScanManager;
     }
+
+    public void invokeScanAsync(){
+        EventBus.getDefault().post(new PerformWifiScanEvent());
+    }
+
+
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void OnMessage(AutoScanCompletedEvent event){
+        Log.d(LogTAG,"AutoScanCompletedEvent received");
+        ArrayList<MeasurePoint> measures =  this.autoScanManager.getMeasurePoints();
+        Sector currentSector = this.sectorManager.getCurrentSector();
+        for( MeasurePoint measurePoint : measures ){
+           // measurePoint.sector = this.getSectorManager().getCurrentSector().getCoordinates();
+            currentSector.insertMeasurePoint(measurePoint);
+        //    measurePointArrayList.add(measurePoint);
+        }
+
+        EventBus.getDefault().post(new RefreshStatisticsEvent());
+
+    }
+
 }
