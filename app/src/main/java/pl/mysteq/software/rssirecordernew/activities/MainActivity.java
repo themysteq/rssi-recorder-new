@@ -232,7 +232,9 @@ public class MainActivity extends Activity {
 
             }
             else {
+                EventBus.getDefault().post(new ReloadBundlesEvent());
                 Log.w(LogTAG,"data is null!");
+
             }
         }
         else if(requestCode == INTENT_RESULT_CODE_SELECT_MEASURE){
@@ -349,48 +351,7 @@ public class MainActivity extends Activity {
             return true;
         }
     }
-    /*
-    public boolean haveLocationPermission(){
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-                Log.i(LogTAG,"You already have permission ACCESS_FINE_LOCATION");
-                locationPermissionsHasBeenGranted();
-                return true;
-            } else {
 
-                Log.i(LogTAG,"You have asked for permission ACCESS_FINE_LOCATION");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},MY_PERMISSIONS_REQUEST_LOCATION );
-                return false;
-            }
-        }
-        else { //you dont need to worry about these stuff below api level 23
-            Log.e(LogTAG,"You already have the permission");
-            locationPermissionsHasBeenGranted();
-            return true;
-        }
-    }
-    public  boolean haveStoragePermission() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                Log.i(LogTAG,"You already have permission WRITE_EXTERNAL_STORAGE");
-                storagePermissionsHasBeenGranted();
-                return true;
-            } else {
-
-                Log.e(LogTAG,"You have asked for permission WRITE_EXTERNAL_STORAGE");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},MY_PERMISSIONS_REQUEST_WRITE_STORAGE );
-                return false;
-            }
-        }
-        else { //you dont need to worry about these stuff below api level 23
-            Log.i(LogTAG,"You already have permission WRITE_EXTERNAL_STORAGE");
-            storagePermissionsHasBeenGranted();
-            return true;
-        }
-    }
-    */
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);

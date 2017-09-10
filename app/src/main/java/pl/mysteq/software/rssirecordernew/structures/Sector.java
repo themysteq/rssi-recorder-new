@@ -57,8 +57,9 @@ public class Sector {
 
     public int getColor()
     {
-        if (this.size() == 0 ) return Color.RED;
-        if (this.size() >= 40) return Color.GREEN;
-        else return Color.YELLOW;
+        int transparency = 0x80FFFFFF;
+        if (this.size() == 0 ) return Color.RED & transparency;
+        if (this.size() >= 40) return Color.GREEN & transparency;
+        else return Color.YELLOW & transparency;
     }
 }

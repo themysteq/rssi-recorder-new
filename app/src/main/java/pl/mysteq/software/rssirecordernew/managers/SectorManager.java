@@ -25,6 +25,7 @@ public class SectorManager {
     //private Sector currentSector = null;
     public static final String LogTAG = "SectorManager";
     public SectorManager(){
+        Log.d(LogTAG,"creating");
         sectors = new HashMap<>(65);
     }
 
@@ -126,8 +127,7 @@ public class SectorManager {
         return  allPoints;
     }
     public void loadAllMeasures(ArrayList<MeasurePoint> _allMeasures){
-        Log.d(LogTAG,"loadAllMeasures()");
-
+        Log.d(LogTAG,"loadAllMeasures() size: "+Integer.toString(_allMeasures.size()));
         for (MeasurePoint measure : _allMeasures){
             getSector(measure.sector).insertMeasurePoint(measure);
             measuresCounter++;

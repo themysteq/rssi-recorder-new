@@ -42,6 +42,7 @@ public class AutoScanManager {
     {
         EventBus.getDefault().register(this);
         this.measurePoints = new ArrayList<>();
+        Log.d(LogTAG,"creating");
        // timer = new Timer();
     }
 
