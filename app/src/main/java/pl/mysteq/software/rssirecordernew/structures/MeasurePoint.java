@@ -6,6 +6,8 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 
+import pl.mysteq.software.rssirecordernew.extendables.SectorPoint;
+
 /**
  * Created by mysteq on 2017-04-22.
  */
@@ -18,7 +20,7 @@ public class MeasurePoint extends Point {
     public int rotation;
 
     @SerializedName("sector")
-    public Point sector;
+    public SectorPoint sector;
 
     public MeasurePoint()
     {
@@ -29,6 +31,12 @@ public class MeasurePoint extends Point {
         scanResultArrayList = new ArrayList<CustomScanResult>(_scanResultArrayList);
         this.rotation = _rotation;
         this.sector = PlanBundle.getSectorFromPointOnImage(point);
+    }
+    public MeasurePoint(ArrayList<CustomScanResult> _scanResultArrayList, SectorPoint _sectorPoint, int _rotation) {
+        super(-3,-3);
+        scanResultArrayList = new ArrayList<CustomScanResult>(_scanResultArrayList);
+        this.rotation = _rotation;
+        this.sector = _sectorPoint;
     }
     public MeasurePoint(MeasurePoint measurePoint){
         super(measurePoint);

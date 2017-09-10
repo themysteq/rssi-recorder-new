@@ -7,7 +7,9 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
+import pl.mysteq.software.rssirecordernew.extendables.SectorPoint;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.Sector;
 
@@ -18,7 +20,8 @@ import pl.mysteq.software.rssirecordernew.structures.Sector;
 public class SectorManager {
 
     private HashMap<Integer,HashMap<Integer,Sector>> sectors;
-    private Point currentSectorPoint = null;
+    private SectorPoint currentSectorPoint = null;
+    private int measuresCounter = 0;
     //private Sector currentSector = null;
     public static final String LogTAG = "SectorManager";
     public SectorManager(){
@@ -47,7 +50,7 @@ public class SectorManager {
         }
 
     }
-    public Sector getSector(Point coordinates){
+    public Sector getSector(SectorPoint coordinates){
         Log.v(LogTAG, String.format("getSector(%s)", coordinates.toString()));
         HashMap<Integer,Sector> secondKeyValue = sectors.get(coordinates.x);
         if( secondKeyValue != null) {
@@ -74,18 +77,60 @@ public class SectorManager {
         }
         return count;
     }
-    public void insertMeasureToSector(MeasurePoint _measurePoint){
-
+    public void insertMeasureToCurrentSector(MeasurePoint _measurePoint){
+           getCurrentSector().insertMeasurePoint(_measurePoint);
+            measuresCounter++;
+    }
+    public void insertMeasureToSector(SectorPoint _sectorPoint, MeasurePoint _measurePoint){
+        Log.v(LogTAG, String.format("insertMeasureToSector(): %s", _sectorPoint.toString()));
+        getSector(_sectorPoint).insertMeasurePoint(_measurePoint);
+        measuresCounter++;
     }
 
-    public void setCurrentSectorPoint(Point currentSector) {
+    public void setCurrentSectorPoint(SectorPoint currentSector) {
+        Log.v(LogTAG, String.format("setCurrentSectorPoint(): %s", currentSector.toString()));
         this.currentSectorPoint = currentSector;
     }
 
-    public Point getCurrentSectorPoint() {
+    public SectorPoint getCurrentSectorPoint() {
         return currentSectorPoint;
     }
     public Sector getCurrentSector() {
         return getSector(currentSectorPoint);
     }
+
+    public ArrayList<MeasurePoint> getAllMeasures(){
+        //FIXME: Could be hard!
+        Log.d(LogTAG,"getAllMeasures() start");
+        ArrayList<MeasurePoint> allPoints = new ArrayList<>();
+        Set<Integer> columns = sectors.keySet();
+        for(Integer x : columns){
+            for(Integer y : sectors.get(x).keySet())
+            {
+                allPoints.addAll(sectors.get(x).get(y).getMeasurePoints());
+            }
+        }
+        Log.d(LogTAG,"getAllMeasures() finish");
+        //FIXME: n^3 algorithm. *slow clap*
+        return  allPoints;
+    }
+    public void loadAllMeasures(ArrayList<MeasurePoint> _allMeasures){
+        Log.d(LogTAG,"loadAllMeasures()");
+
+        for (MeasurePoint measure : _allMeasures){
+            getSector(measure.sector).insertMeasurePoint(measure);
+            measuresCounter++;
+        }
+    }
+    public int measuresPerSectorSize(SectorPoint _sectorPoint){
+        return getSector(_sectorPoint).size();
+    }
+    public int measuresPerCurrentSectorSize(){
+        return getCurrentSector().size();
+    }
+
+    public int getMeasuresCounter() {
+        return measuresCounter;
+    }
+
 }

@@ -165,6 +165,7 @@ public class MainActivity extends Activity {
                             continueMeasureIntent.putExtra("MEASURE_NAME", measure);
                             continueMeasureIntent.putExtra("MEASURE_UUID",selectedMeasureUUID);
                            continueMeasureIntent.putExtra("MEASURE_FULLPATH",measure);
+                            progressDialog.show();
                             startActivityForResult(continueMeasureIntent,INTENT_RESULT_CODE_SCANNING);
 
                         }
@@ -204,10 +205,13 @@ public class MainActivity extends Activity {
                 Log.w(LogTAG,"No bundle selected!");
                 if(selectedBundle == null){
                     selectedPlanTextView.setText("-- none --");
+                    EventBus.getDefault().post(new ReloadBundlesEvent());
                 }
                 else{
                     selectedPlanTextView.setText(selectedBundle);
                     Log.d(LogTAG,"But using old value: "+selectedBundle);
+                   // progressDialog.dismiss();
+                    EventBus.getDefault().post(new ReloadBundlesEvent());
                 }
             }
         }
@@ -279,6 +283,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onStart() {
+        Log.v(LogTAG,"onStart()");
         super.onStart();
         progressDialog.show();
     }
@@ -314,7 +319,7 @@ public class MainActivity extends Activity {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
     }
-    @Subscribe(sticky = true,threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessage(BundlesReloadedEvent event){
         progressDialog.dismiss();
     }

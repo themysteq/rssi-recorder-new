@@ -80,6 +80,7 @@ public class MeasuresActivity extends Activity {
 
     @Override
     protected void onStop() {
+        EventBus.getDefault().post(new ReloadBundlesEvent());
         //EventBus.getDefault().unregister(this);
         super.onStop();
     }

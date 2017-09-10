@@ -1,11 +1,14 @@
 package pl.mysteq.software.rssirecordernew.activities;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.greenrobot.eventbus.EventBus;
@@ -16,6 +19,8 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import pl.mysteq.software.rssirecordernew.R;
+import pl.mysteq.software.rssirecordernew.events.ProgressEvent;
+import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncMeasuresDoneEvent;
@@ -37,8 +42,9 @@ public class SynchronizerActivity extends Activity {
     SharedPreferences sharedPreferences = null;
     String hostname = null;
     Integer port = null;
-
+    private ProgressDialog progressDialog = null;
     @BindView(R.id.editText) EditText editText;
+    @BindView(R.id.progressBar) ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +57,7 @@ public class SynchronizerActivity extends Activity {
         Log.d(LogTAG,"Getting shared preferences");
         hostname = sharedPreferences.getString("SYNC_HOSTNAME","localhost");
         port = sharedPreferences.getInt("SYNC_PORT",5000);
+        prepareProgress();
 
     }
 
@@ -61,21 +68,25 @@ public class SynchronizerActivity extends Activity {
 
     @OnClick(R.id.synchronizeBundlesButton) void syncBundles(){
         Log.d(LogTAG,"syncBundles()");
+        hideProgress();
         EventBus.getDefault().post(new SyncBundlesEvent(hostname,port));
 
     }
 
     @OnClick(R.id.synchronizeMeasuresButton) void syncMeasures(){
         Log.d(LogTAG,"syncMeasures()");
+        hideProgress();
         EventBus.getDefault().post(new SyncMeasuresEvent(hostname,port));
     }
 
     @OnClick(R.id.synchronizePlansButton) void syncPlans(){
         Log.d(LogTAG,"syncPlans()");
+        hideProgress();
         EventBus.getDefault().post(new SyncPlansEvent(hostname,port));
     }
     @OnClick(R.id.synchronizeRawPlansButton) void syncRawPlans(){
         Log.d(LogTAG,"syncRawPlans()");
+        hideProgress();
         EventBus.getDefault().post(new SyncRawPlansEvent(hostname,port));
     }
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -108,4 +119,38 @@ public class SynchronizerActivity extends Activity {
         Toast.makeText(getApplicationContext(),"measures synced",Toast.LENGTH_SHORT).show();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.v(LogTAG,"onStop()");
+        EventBus.getDefault().post(new ReloadBundlesEvent());
+        EventBus.getDefault().unregister(this);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void OnMessage(ProgressEvent event){
+        if(event.enabled){
+            progressBar.setEnabled(true);
+            progressBar.setProgress(Math.round(event.progress*100));
+        }
+        else{
+            progressBar.setProgress(0);
+            progressBar.setEnabled(false);
+        }
+        editText.append(event.text);
+        progressBar.setIndeterminate(event.indeterminate);
+
+    }
+    public void showProgess(){
+        progressBar.setEnabled(true);
+    }
+    public void hideProgress(){
+        progressBar.setEnabled(false);
+        progressBar.setProgress(0);
+        editText.setText("Processing...", TextView.BufferType.NORMAL);
+    }
+    public void prepareProgress(){
+        progressBar.setIndeterminate(false);
+        progressBar.setMax(100);
+    }
 }

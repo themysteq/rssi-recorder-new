@@ -9,11 +9,14 @@ import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import org.greenrobot.eventbus.EventBus;
+
 import butterknife.BindString;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import pl.mysteq.software.rssirecordernew.R;
+import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 
 import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
 
@@ -31,8 +34,8 @@ public class SettingsActivity extends Activity {
         ButterKnife.bind(this);
         sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
         editor = sharedPreferences.edit();
-        String sharedPreferencesHostname = sharedPreferences.getString("SYNC_HOSTNAME","localhost");
-        int sharedPreferencesPort = sharedPreferences.getInt("SYNC_PORT",80);
+        String sharedPreferencesHostname = sharedPreferences.getString("SYNC_HOSTNAME","ovh02.mysteq.pl");
+        int sharedPreferencesPort = sharedPreferences.getInt("SYNC_PORT",7777);
         serverEditText.setText(sharedPreferencesHostname);
         portEditText.setText(Integer.toString(sharedPreferencesPort) );
 
@@ -71,5 +74,11 @@ public class SettingsActivity extends Activity {
         return true;
     }
 
-
+    @Override
+    protected void onStop() {
+        Log.v(LogTAG,"onStop()");
+        EventBus.getDefault().post(new ReloadBundlesEvent());
+        EventBus.getDefault().unregister(this);
+        super.onStop();
+    }
 }
