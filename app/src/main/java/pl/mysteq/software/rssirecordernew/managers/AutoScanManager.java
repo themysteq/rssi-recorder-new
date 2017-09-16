@@ -36,7 +36,7 @@ public class AutoScanManager {
     private Timer timer = null;
     private float externalRotation = 0;
     private float externalOffset = 0;
-    private boolean slow_scan = true;
+    private boolean slow_scan = false;
    // private Point hookPoint = null;
    // private Point sector = null;
     private ArrayList<MeasurePoint> measurePoints = null;
