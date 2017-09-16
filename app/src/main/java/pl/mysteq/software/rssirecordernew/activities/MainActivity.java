@@ -69,6 +69,10 @@ public class MainActivity extends Activity {
         startActivity(settingsActivity);
     }
 
+    @OnClick(R.id.openRecordPathButton) void startRecordPathActivity(){
+        Intent recordPathActivity = new Intent(getBaseContext(),RecordPathActivity.class);
+        startActivity(recordPathActivity);
+    }
     @OnClick(R.id.algorithmLaunchButton) public void algorithmLaunch()
     {
 

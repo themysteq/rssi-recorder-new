@@ -234,5 +234,8 @@ public final class MyWifiScannerManager {
         EventBus.getDefault().post(new RefreshStatisticsEvent());
 
     }
+    public void cleanup(){
+        EventBus.getDefault().unregister(this);
+    }
 
 }
