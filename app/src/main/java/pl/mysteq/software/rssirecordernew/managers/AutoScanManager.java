@@ -83,8 +83,10 @@ public class AutoScanManager {
         perDirectionMeasuresCounter = 0;
     }
     public void finish(){
-        running = false;
-        if(timer != null) timer.cancel();
+        Log.d(LogTAG,"finish()");
+        if(running) {
+            running = false;
+            if (timer != null) timer.cancel();
      /*   for (MeasurePoint _mp: measurePoints
              ) {
             //FIXME: ROTATION!!
@@ -93,8 +95,12 @@ public class AutoScanManager {
         }
 */
 
-        perDirectionMeasuresCounter = 0;
-        EventBus.getDefault().post(new AutoScanCompletedEvent());
+            perDirectionMeasuresCounter = 0;
+            EventBus.getDefault().post(new AutoScanCompletedEvent());
+        }else
+        {
+            throw new IllegalStateException("Finishing already finished!");
+        }
     }
     public void pause(){}
 
@@ -116,9 +122,11 @@ public class AutoScanManager {
                 _final_rotation = ScanningActivity.finalRotation;
                 _final_offset = ScanningActivity.calibrationOffset;
             }
-            MeasurePoint measurePoint = new MeasurePoint(results,
+            MeasurePoint measurePoint =
+                    new MeasurePoint(results,
                     MyWifiScannerManager.getInstance().getSectorManager().getCurrentSectorPoint(),
                     Math.round(_final_rotation));
+
             measurePoint.setDirection(MeasurePoint.getDirection(_final_rotation));
             measurePoint.setOffset(Math.round(_final_offset));
             measurePoints.add(measurePoint);

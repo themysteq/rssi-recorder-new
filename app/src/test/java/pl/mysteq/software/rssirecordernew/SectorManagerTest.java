@@ -15,6 +15,8 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.Implements;
 import org.robolectric.shadows.ShadowLog;
 
+import java.util.ArrayList;
+
 import pl.mysteq.software.rssirecordernew.extendables.SectorPoint;
 import pl.mysteq.software.rssirecordernew.managers.SectorManager;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
@@ -109,5 +111,19 @@ public class SectorManagerTest {
         SectorManager sectorManager = new SectorManager();
     }
 
+
+    @Test
+    public void testMeasures(){
+
+        SectorManager sectorManager = new SectorManager();
+        sectorManager.setCurrentSectorPoint(new SectorPoint(100,100));
+        Sector sector =  sectorManager.getCurrentSector();
+        sector.insertMeasurePoint(new MeasurePoint());
+        sector.insertMeasurePoint(new MeasurePoint());
+        ArrayList<MeasurePoint> ms = sectorManager.getAllMeasures();
+
+        assertEquals(ms.size(),2);
+
+    }
 
 }

@@ -37,6 +37,7 @@ public class Sector {
     }
 
     public void insertMeasurePoint(MeasurePoint _measurePoint){
+        Log.d(LogTAG, String.format("insertMeasurePoint(). %d + 1",measurePoints.size() ));
         this.measurePoints.add(_measurePoint);
     }
 
@@ -52,6 +53,7 @@ public class Sector {
     }
 
     public ArrayList<MeasurePoint> getMeasurePoints() {
+        Log.d(LogTAG, String.format("getMeasurePoints(). size: %d",measurePoints.size() ));
         return measurePoints;
     }
 

@@ -19,6 +19,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -89,6 +90,7 @@ public class RecordPathActivity extends Activity implements SensorEventListener 
     @BindView(R.id.recordSecondTextView) TextView reccordSecondTextView;
     @BindView(R.id.recordLeftTextView) TextView recordLeftTextView;
     @BindView(R.id.recordRightTextView) TextView recordRightTextView;
+    @BindView(R.id.recordSaveButton) Button recordSaveButton;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -167,10 +169,10 @@ public class RecordPathActivity extends Activity implements SensorEventListener 
         calibrationOffset = sharedPreferences.getInt(OFFSET_VALUE_KEY,0);
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         rotatiometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        scannerManagerInstance = MyWifiScannerManager.getInstance().init(getApplicationContext());
+        scannerManagerInstance = MyWifiScannerManager.getInstance().init(this);
         scannerManagerInstance.getAutoScanManager().setUseExternalRotation(true);
         scannerManagerInstance.getAutoScanManager().setExternalOffset(calibrationOffset);
-        scannerManagerInstance.scan();
+       // scannerManagerInstance.scan();
 
 
         dialog = new ProgressDialog(this,ProgressDialog.STYLE_SPINNER);
@@ -188,6 +190,7 @@ public class RecordPathActivity extends Activity implements SensorEventListener 
         else {
             //not recording, start
             Log.d(LogTAG,"Start record");
+            scannerManagerInstance.getSectorManager().clearAll();
             startRecordButton.setText("Stop record");
             slowScanSwitch.setEnabled(false);
             measureBundle = new MeasureBundle("path_record");
@@ -206,29 +209,37 @@ public class RecordPathActivity extends Activity implements SensorEventListener 
         }
     }
     @OnCheckedChanged(R.id.slowScanSwitch)
-    void slowaScanChanged(boolean isChecked)
+    public void slowaScanChanged(boolean isChecked)
     {
         scannerManagerInstance.getAutoScanManager().setSlow_scan(isChecked);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    void refreshAutoScanStats(SubmitAutoScanEvent event){
+    public void refreshAutoScanStats(SubmitAutoScanEvent event){
         Log.d(LogTAG,"refreshAutoScanStats()");
         String count = Integer.toString(event.counter);
         recordLeftTextView.setText(String.format("count: %s",count));
     }
     @Subscribe(threadMode = ThreadMode.MAIN)
-    void grabScansAndSave(AutoScanCompletedEvent event){
+    public void grabScansAndSave(AutoScanCompletedEvent event){
 
         Log.d(LogTAG,"grabScansAndSave()");
-        ArrayList<MeasurePoint> measures = scannerManagerInstance.getAutoScanManager().getMeasurePoints();
-        measureBundle.setMeasures(measures);
-        scannerManagerInstance.saveToFile(measureBundle);
 
         startRecordButton.setText("Start record");
         slowScanSwitch.setEnabled(true);
         recordLeftTextView.setText(String.format("count: %s",0));
         dialog.dismiss();
         recording = false;
+    }
+
+    @OnClick(R.id.recordSaveButton)
+    void saveMeasuresToFile()
+    {
+       // ArrayList<MeasurePoint> measures = scannerManagerInstance.getAutoScanManager().getMeasurePoints();
+       // String _count = Integer.toString(measures.size());
+      //  Toast.makeText(this,"saving "+_count,Toast.LENGTH_SHORT).show();
+       // measureBundle.setMeasures(measures);
+        scannerManagerInstance.saveToFile(measureBundle);
+
     }
 }
