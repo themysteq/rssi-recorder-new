@@ -33,7 +33,8 @@
         <activity android:name=".activities.MeasuresActivity" />
         <activity android:name=".activities.SynchronizerActivity" />
         <activity android:name=".activities.SettingsActivity" />
-        <activity android:name=".activities.AlgorithmActivity"></activity>
+        <activity android:name=".activities.AlgorithmActivity" />
+        <activity android:name=".activities.RecordPathActivity"></activity>
     </application>
 
 </manifest>

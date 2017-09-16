@@ -62,7 +62,6 @@ public class AutoScanManager {
             @Override
             public void run() {Log.d(LogTAG,"new PerformWifiScanEvent");
               EventBus.getDefault().post(new PerformWifiScanEvent());
-
             }
         },DELAY,PERIOD);
 
@@ -104,7 +103,7 @@ public class AutoScanManager {
             measurePoints.add(measurePoint);
             perDirectionMeasuresCounter++;
             EventBus.getDefault().post(new SubmitAutoScanEvent(perDirectionMeasuresCounter));
-            EventBus.getDefault().post(new PerformWifiScanEvent());
+            //EventBus.getDefault().post(new PerformWifiScanEvent());
             Log.d(LogTAG, String.format("scanCompleted received: %d", perDirectionMeasuresCounter));
         }
         else{
