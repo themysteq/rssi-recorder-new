@@ -165,6 +165,7 @@ public class MainActivity extends Activity {
                             continueMeasureIntent.putExtra("MEASURE_NAME", measure);
                             continueMeasureIntent.putExtra("MEASURE_UUID",selectedMeasureUUID);
                            continueMeasureIntent.putExtra("MEASURE_FULLPATH",measure);
+                            progressDialog.show();
                             startActivityForResult(continueMeasureIntent,INTENT_RESULT_CODE_SCANNING);
 
                         }
@@ -204,10 +205,13 @@ public class MainActivity extends Activity {
                 Log.w(LogTAG,"No bundle selected!");
                 if(selectedBundle == null){
                     selectedPlanTextView.setText("-- none --");
+                    EventBus.getDefault().post(new ReloadBundlesEvent());
                 }
                 else{
                     selectedPlanTextView.setText(selectedBundle);
                     Log.d(LogTAG,"But using old value: "+selectedBundle);
+                   // progressDialog.dismiss();
+                    EventBus.getDefault().post(new ReloadBundlesEvent());
                 }
             }
         }
@@ -228,7 +232,9 @@ public class MainActivity extends Activity {
 
             }
             else {
+                EventBus.getDefault().post(new ReloadBundlesEvent());
                 Log.w(LogTAG,"data is null!");
+
             }
         }
         else if(requestCode == INTENT_RESULT_CODE_SELECT_MEASURE){
@@ -237,6 +243,8 @@ public class MainActivity extends Activity {
                 selectedMeasureUUID = data.getStringExtra("MEASURE_UUID");
                 Log.d(LogTAG,"measure UUID = "+ selectedMeasureUUID);
                 continueLastMeasureButton.setEnabled(true);
+                EventBus.getDefault().post(new ReloadBundlesEvent());
+
             }
             else
             {
@@ -277,6 +285,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onStart() {
+        Log.v(LogTAG,"onStart()");
         super.onStart();
         progressDialog.show();
     }
@@ -312,7 +321,7 @@ public class MainActivity extends Activity {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
     }
-    @Subscribe(sticky = true,threadMode = ThreadMode.MAIN)
+    @Subscribe(threadMode = ThreadMode.MAIN)
     public void onMessage(BundlesReloadedEvent event){
         progressDialog.dismiss();
     }
@@ -342,48 +351,7 @@ public class MainActivity extends Activity {
             return true;
         }
     }
-    /*
-    public boolean haveLocationPermission(){
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                    == PackageManager.PERMISSION_GRANTED) {
-                Log.i(LogTAG,"You already have permission ACCESS_FINE_LOCATION");
-                locationPermissionsHasBeenGranted();
-                return true;
-            } else {
 
-                Log.i(LogTAG,"You have asked for permission ACCESS_FINE_LOCATION");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},MY_PERMISSIONS_REQUEST_LOCATION );
-                return false;
-            }
-        }
-        else { //you dont need to worry about these stuff below api level 23
-            Log.e(LogTAG,"You already have the permission");
-            locationPermissionsHasBeenGranted();
-            return true;
-        }
-    }
-    public  boolean haveStoragePermission() {
-        if (Build.VERSION.SDK_INT >= 23) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                Log.i(LogTAG,"You already have permission WRITE_EXTERNAL_STORAGE");
-                storagePermissionsHasBeenGranted();
-                return true;
-            } else {
-
-                Log.e(LogTAG,"You have asked for permission WRITE_EXTERNAL_STORAGE");
-                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},MY_PERMISSIONS_REQUEST_WRITE_STORAGE );
-                return false;
-            }
-        }
-        else { //you dont need to worry about these stuff below api level 23
-            Log.i(LogTAG,"You already have permission WRITE_EXTERNAL_STORAGE");
-            storagePermissionsHasBeenGranted();
-            return true;
-        }
-    }
-    */
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);

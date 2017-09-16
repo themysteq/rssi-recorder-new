@@ -5,9 +5,9 @@ import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -41,10 +41,13 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import butterknife.OnLongClick;
+import butterknife.OnTouch;
 import pl.mysteq.software.rssirecordernew.R;
+import pl.mysteq.software.rssirecordernew.events.RefreshStatisticsEvent;
 import pl.mysteq.software.rssirecordernew.events.ReloadBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.SubmitAutoScanEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompletedEvent;
+import pl.mysteq.software.rssirecordernew.extendables.SectorPoint;
 import pl.mysteq.software.rssirecordernew.managers.ImageManipulationManager;
 import pl.mysteq.software.rssirecordernew.managers.MyWifiScannerManager;
 import pl.mysteq.software.rssirecordernew.managers.PlansFileManager;
@@ -53,6 +56,8 @@ import pl.mysteq.software.rssirecordernew.structures.MeasureBundle;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 import pl.mysteq.software.rssirecordernew.structures.Sector;
+
+import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
 
 public class ScanningActivity extends Activity implements SensorEventListener {
 
@@ -74,14 +79,21 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         }
 
     };
-    float[] mGravity;
-    float[] mGeomagnetic;
+    SharedPreferences sharedPreferences = null;
+    //public static final String SHAREDPREF_SCANNING = "rssi_recorder_scanning_prefs";
+    public static final String OFFSET_VALUE_KEY = "offset_value";
+    //float[] mGravity;
+    //float[] mGeomagnetic;
     static final float alpha = 0.5f;
-    float azimut;
-    float degrees;
-    float lockedDegree = 0;
+    //float azimut;
+    public static float degrees;
+    //float lockedDegree = 0;
     float px,py;
-    float offset = 0;
+    //float offset = 0;
+    private int mAzimuth = 0; // degree
+
+    float[] orientation = new float[3];
+    float[] rMat = new float[9];
 
     Bitmap buildingBitmap = null;
     Bitmap measuresBitmap = null;
@@ -100,77 +112,65 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     int perDirectionMeasures = 0;
 
     float calibrationOffset = 0;
-    float calbratedRotation = 0;
-    float finalRotation = 0;
+   // float calbratedRotation = 0;
+    public static float finalRotation = 0;
 
     float fixedRotation = 0;
-    boolean lockedRotation = false;
+    //oolean lockedRotation = false;
 
 
     SensorManager mSensorManager ;
     Sensor accelerometer;
     Sensor magnetometer;
-    //widgets
-    SeekBar zoomBar = null;
-    ImageView markupMeasuresImageView = null;
-    ImageView buildingPlanImageView = null;
-    Button scanButton = null;
-    Button mostRightButton = null;
+    Sensor rotatiometer;
+
     Canvas measuresCanvas = null;
     String measureFullPath = null;
 
-    TextView degreesTextView = null;
-    TextView offsetTextView = null;
-
-
-
-    //boolean lockOrient = true;
     ProgressDialog progressDialog = null;
     AlertDialog aboutCalibrationDialog = null;
-   // CalibratorDialog calibratorDialog = null;
+
 
     @BindView(R.id.counterSummaryTextView) TextView counterTextView;
     @BindView(R.id.rightButton) Button startAutoMeasureButton;
     @BindView(R.id.selectedSectorTextView) TextView selectedSectorTextView;
     @BindView(R.id.directionImageButton)ImageButton directionImageButtton;
+    @BindView(R.id.zoomSeekBar) SeekBar zoomBar;
+    @BindView(R.id.leftButton) Button scanButton;
+    @BindView(R.id.markupMeasuresImageView) ImageView markupMeasuresImageView;
+    @BindView(R.id.buildingPlanImageView) ImageView buildingPlanImageView;
+    @BindView(R.id.mostRightButton) Button mostRightButton;
+    @BindView(R.id.degreesTextView) TextView degreesTextView;
+    @BindView(R.id.directionTextView) TextView offsetTextView;
 
+    @Override
+    protected void onDestroy() {
+        Log.d(LogTAG,"RUNTIME onDestroy()");
+        super.onDestroy();
+        markupMeasuresImageView.setImageBitmap(null);
+        buildingPlanImageView.setImageBitmap(null);
+        buildingPlanManipulationManager.recycle();
+        markupsImageManipulationManager.recycle();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d(LogTAG,"RUNTIME onCreate()");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_scanning);
         ButterKnife.bind(this);
+        initAllElements();
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        rotatiometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        //autoScanManager = new AutoScanManager();
-        //sectorManager = new SectorManager();
-
-        //bindings
-
-
 
         mostRightButton.setEnabled(false);
 
-        scannerManagerInstance.loadFromFile(new File(PlansFileManager.getInstance().getAppExternalMeasuresFolder(),measureFullPath));
-        ArrayList<MeasurePoint> measurePointArrayList = scannerManagerInstance.getMeasurePointArrayList();
-        if (measurePointArrayList.size() > 0) {
-            for (MeasurePoint measurePoint : measurePointArrayList)
-            {
-                markupsImageManipulationManager.drawPoint(measurePoint);
 
-            }
-            markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
-            Log.d(LogTAG,"Drawing points done");
-        }
-        else
-        {
-            Log.i(LogTAG,"Empty measure file when loading");
-        }
         progressDialog.dismiss();
         aboutCalibrationDialog.show();
-        counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getMeasuresCount()));
-
+        counterTextView.setText(String.format("Measures. Current:%d Total:%d",  currentMeasuresCounter, scannerManagerInstance.getSectorManager().getMeasuresCounter()));
 
         zoomBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -194,7 +194,6 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
             }
         });
-
         markupMeasuresImageView.setOnTouchListener(new View.OnTouchListener() {
             private GestureDetector gestureDetector = new GestureDetector(getBaseContext(), new GestureDetector.SimpleOnGestureListener() {
 
@@ -244,38 +243,27 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
 
                     if ( ! scannerManagerInstance.getAutoScanManager().isRunning()){
-                        scannerManagerInstance.addMeasurePoint(customScanResults, pointOnImage, Math.round((degrees + calibrationOffset) % 360.f));
+                        scannerManagerInstance.addMeasurePoint(customScanResults, pointOnImage, Math.round(finalRotation));
                     markupsImageManipulationManager.drawPoint(pointOnImage);
                     markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
-
-
                     //Update counters and display them
                     currentMeasuresCounter++;
-                    counterTextView.setText(String.format("Measures. Current:%d Total:%d", currentMeasuresCounter, scannerManagerInstance.getMeasuresCount()));
+                    counterTextView.setText(String.format("Measures. Current:%d Total:%d", currentMeasuresCounter, scannerManagerInstance.getSectorManager().getMeasuresCounter()));
                 }
                 else {
                         Toast.makeText(getApplicationContext(),"Autoscanning is running!",Toast.LENGTH_SHORT).show();
                     }
-
-
                     return true;
                 }
 
                 @Override
                 public void onLongPress(MotionEvent e) {
-                    //
-
                     Point pointOnView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages),e );
                     Point pointOnImage = ImageManipulationManager.calculatePointOnImage(markupMeasuresImageView,pointOnView);
                     Log.d(LogTAG, String.format("Long press: x: %d, y: %d", pointOnImage.x,pointOnImage.y));
                     selectSector(pointOnImage);
-
-
-
                 }
             });
-
-
             @Override
             public boolean onTouch(View v, MotionEvent event) {
 
@@ -283,8 +271,6 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                 gestureDetector.onTouchEvent(event);
                 return true;
             }
-
-
         });
 
         buildingPlanImageView.setOnTouchListener(new View.OnTouchListener() {
@@ -320,6 +306,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
 
     @Override
     protected void onStart() {
+        Log.d(LogTAG,"RUNTIME onStart()");
         super.onStart();
         try {
             EventBus.getDefault().register(this);
@@ -327,28 +314,24 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         catch (org.greenrobot.eventbus.EventBusException ex){
             Log.w(LogTAG,"OOoops. "+ex.getMessage());
         }
-        //String planName = getIntent().getStringExtra("PLAN_NAME");
-        //plansFileManager.generateNewMeasureFile()
     }
     @Override
     protected void onResume()
     {
+        Log.d(LogTAG,"RUNTIME onResume()");
         super.onResume();
-        mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
-        mSensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_UI);
+        mSensorManager.registerListener(this, rotatiometer, SensorManager.SENSOR_DELAY_FASTEST);
         try {
             registerReceiver(broadcast,filter);
         }
         catch (org.greenrobot.eventbus.EventBusException ex){
             Log.w(LogTAG,"OOoops. "+ex.getMessage());
         }
-
-
-
     }
     @Override
     protected void onPause()
     {
+        Log.d(LogTAG,"RUNTIME onPause()");
         super.onPause();
         mSensorManager.unregisterListener(this);
     }
@@ -356,6 +339,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     @Override
     protected void onStop()
     {
+        Log.d(LogTAG,"RUNTIME onStop()");
       //  EventBus.getDefault().unregister(this);
         try {
             unregisterReceiver(broadcast);
@@ -363,10 +347,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         catch (IllegalArgumentException ex){
             Log.w(LogTAG,"BroadcastReceiver already unregistered");
         }
-
         Log.d(LogTAG,"scannerManagerInstance.saveToFile : "+measureBundle.getFilepath());
-        //scannerManagerInstance.saveToFile(new File(measureFullPath),planName);
-        //measureBundle.setMeasures();
         measureBundle.setLastChanged(new Date());
         scannerManagerInstance.saveToFile(measureBundle); // FIXME
         scannerManagerInstance.stop();
@@ -374,19 +355,111 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         Log.d(LogTAG,"calling onStop");
         sourceBitmap.recycle();
         super.onStop();
-
     }
 
     @Override
     public void onContentChanged() {
         super.onContentChanged();
+        Log.d(LogTAG,"RUNTIME onContentChanged()");
+        sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
+        Log.d(LogTAG,"Getting shared preferences");
+        calibrationOffset = sharedPreferences.getInt(OFFSET_VALUE_KEY,0);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setCancelable(false);
+        alertDialogBuilder.setMessage("Remember about the calibration setup!");
+        alertDialogBuilder.setTitle("See settings for calibration. Current offset: "+Integer.toString(Math.round(calibrationOffset)));
+        alertDialogBuilder.setPositiveButton("Continue",null);
+        progressDialog = new ProgressDialog(this,ProgressDialog.STYLE_SPINNER);
+        progressDialog.setMessage("Loading...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+        aboutCalibrationDialog = alertDialogBuilder.create();
+    }
 
-        zoomBar = (SeekBar) findViewById(R.id.zoomSeekBar);
-        scanButton = (Button) findViewById(R.id.leftButton);
-        markupMeasuresImageView = (ImageView) findViewById(R.id.markupMeasuresImageView);
-        buildingPlanImageView = (ImageView) findViewById(R.id.buildingPlanImageView);
+    protected Point getRelativePosition(View v, MotionEvent event) {
+        int[] location = new int[2];
+        v.getLocationOnScreen(location);
+        float screenX = event.getRawX();
+        float screenY = event.getRawY();
+        float viewX = screenX - location[0];
+        float viewY = screenY - location[1];
+        return new Point((int) viewX, (int) viewY);
+    }
+    @Subscribe
+    public void onMessage(WifiScanCompletedEvent event){
+        buildingPlanImageView.setEnabled(true);
+        markupMeasuresImageView.setEnabled(true);
+    }
+    @Subscribe (threadMode = ThreadMode.MAIN)
+    public void onMessage(SubmitAutoScanEvent event){
+        counterTextView.setText(String.format("Measures. Current:%d Total submitted:%d", event.counter, scannerManagerInstance.getSectorManager().getMeasuresCounter()));
+    }
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if( event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR ){
+            // calculate th rotation matrix
+            SensorManager.getRotationMatrixFromVector( rMat, event.values );
+            // get the azimuth value (orientation[0]) in degree
+            mAzimuth = (int) ( Math.toDegrees( SensorManager.getOrientation( rMat, orientation )[0] ) + 360 ) % 360;
+                degrees = (360 + mAzimuth)%360;
+        }
+        finalRotation = degrees+calibrationOffset;
+        //directionImageButtton.setRotation(finalRotation);
+        directionImageButtton.setRotation(finalRotation);
+        degreesTextView.setText(Float.toString(finalRotation));
+        offsetTextView.setText(MeasurePoint.rotationToString(finalRotation));
+    }
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
-        Log.d(LogTAG,"Content changed");
+    @OnClick(R.id.rightButton) void startAutoMeasure()
+    {
+       Log.d(LogTAG,"startAutoMeasure onClick()");
+
+        if(scannerManagerInstance.getAutoScanManager().isPrepared()) {
+            perDirectionMeasures = 0;
+            //startAutoMeasureButton.setText("Scanning...");
+            Toast.makeText(getApplicationContext(),"Scanning...",Toast.LENGTH_LONG).show();
+            scannerManagerInstance.getAutoScanManager().start();
+        } else {
+            Toast.makeText(getApplicationContext(),"Long press first on sector",Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void selectSector(Point pointOnImage) {
+        EventBus.getDefault().post(new RefreshStatisticsEvent());
+        SectorPoint selectedSector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
+        scannerManagerInstance.getSectorManager().setCurrentSectorPoint(selectedSector);
+        scannerManagerInstance.getLastScanResult();
+        markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
+    }
+
+
+    @OnClick(R.id.directionImageButton) void changeScanDirection() {
+        fixedRotation = (fixedRotation+90.f)%360.f;
+        directionImageButtton.setRotation(fixedRotation);
+        Log.d(LogTAG, String.format("old calibration offset = %.0f", calibrationOffset));
+        calibrationOffset = (fixedRotation - degrees)%360.f;
+        Log.d(LogTAG, String.format("new calibration offset = %.0f", calibrationOffset));
+    }
+    @OnLongClick(R.id.directionImageButton) boolean saveOffset() {
+        Log.d(LogTAG,"saveOffset()");
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(OFFSET_VALUE_KEY,Math.round(calibrationOffset));
+        editor.apply();
+        return true; //long click is not simple click
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void OnMessage(RefreshStatisticsEvent event){
+        Log.v(LogTAG,"RefreshStatisticsEvent received");
+        Sector _sector = scannerManagerInstance.getSectorManager().getCurrentSector();
+        counterTextView.setText(String.format("Measures. Current:%d Total submitted:%d",
+                //_sector.size(),
+                0,
+                scannerManagerInstance.getSectorManager().getMeasuresCounter() ));
+        selectedSectorTextView.setText(String.format("X%d_Y%d: %d", _sector.getCoordinates().x,_sector.getCoordinates().y, _sector.size()));
+    }
+    private void initAllElements(){
         plansFileManager = PlansFileManager.getInstance();
         planName = getIntent().getStringExtra("PLAN_NAME");
         measureFullPath = getIntent().getStringExtra("MEASURE_FULLPATH");
@@ -406,195 +479,18 @@ public class ScanningActivity extends Activity implements SensorEventListener {
         buildingBitmap = buildingPlanManipulationManager.getBitmap();
         px = (buildingPlanImageView.getScrollX()+buildingPlanImageView.getWidth()/(2*buildingPlanImageView.getScaleX()));
         py = (buildingPlanImageView.getScrollY()+buildingPlanImageView.getHeight())/(2*buildingPlanImageView.getScaleY());
-        //buildingPlanManipulationManager.setBitmap(buildingBitmap);
-        //buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
-        //measuresBitmap = Bitmap.createBitmap(buildingBitmap.getWidth(),buildingBitmap.getHeight(),Bitmap.Config.ARGB_8888);
         markupsImageManipulationManager.setBlankBitmap(buildingPlanManipulationManager.getBitmap());
-
         buildingPlanImageView.setEnabled(false);
         markupMeasuresImageView.setEnabled(false);
         scannerManagerInstance = MyWifiScannerManager.getInstance().init(getApplicationContext());
         markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getBitmap());
+        Log.d(LogTAG,"Redrawing sectors");
+        //buildingPlanManipulationManager.redrawSectors();
+        scannerManagerInstance.loadFromFile(new File(PlansFileManager.getInstance().getAppExternalMeasuresFolder(),measureFullPath));
+        buildingPlanManipulationManager.redrawSectors();
         buildingPlanImageView.setImageBitmap(buildingPlanManipulationManager.getBitmap());
         scannerManagerInstance.scan();
-        mostRightButton = (Button) findViewById(R.id.mostRightButton);
-
-        degreesTextView = (TextView) findViewById(R.id.degreesTextView);
-        offsetTextView = (TextView) findViewById(R.id.offsetTextView);
-
-        progressDialog = new ProgressDialog(this,ProgressDialog.STYLE_SPINNER);
-        progressDialog.setMessage("Loading...");
-        progressDialog.setCancelable(false);
-        progressDialog.show();
-
-
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        alertDialogBuilder.setCancelable(false);
-        alertDialogBuilder.setMessage("Remember about the calibration setup!");
-        alertDialogBuilder.setTitle("Calibration?");
-        alertDialogBuilder.setPositiveButton("Continue",null);
-
-        alertDialogBuilder.setNegativeButton("Calibrate", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-            //    Log.d(LogTAG, String.format("Calibrate: Clicked %d button", which ));
-                    //showCalibrator();
-            }
-        });
-        aboutCalibrationDialog = alertDialogBuilder.create();
-
-
-
-
-
 
 
     }
-
-    protected Point getRelativePosition(View v, MotionEvent event) {
-        int[] location = new int[2];
-        v.getLocationOnScreen(location);
-        float screenX = event.getRawX();
-        float screenY = event.getRawY();
-        float viewX = screenX - location[0];
-        float viewY = screenY - location[1];
-        return new Point((int) viewX, (int) viewY);
-    }
-    @Subscribe
-    public void onMessage(WifiScanCompletedEvent event){
-        buildingPlanImageView.setEnabled(true);
-        markupMeasuresImageView.setEnabled(true);
-    }
-    @Subscribe (threadMode = ThreadMode.MAIN)
-    public void onMessage(SubmitAutoScanEvent event){
-        counterTextView.setText(String.format("Measures. Current:%d Total:%d", event.counter, scannerManagerInstance.getMeasuresCount()));
-    }
-
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
-            mGravity = lowPass(event.values.clone(),mGravity);
-            //mGravity = event.values;
-        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
-            mGeomagnetic = lowPass(event.values.clone(),mGeomagnetic);
-            //mGeomagnetic = event.values;
-        if (mGravity != null && mGeomagnetic != null) {
-            float R[] = new float[9];
-            float I[] = new float[9];
-            boolean success = SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic);
-            if (success) {
-                float orientation[] = new float[3];
-                SensorManager.getOrientation(R, orientation);
-                azimut = orientation[0]; // orientation contains: azimut, pitch and roll
-                degrees = ((float)Math.toDegrees(azimut)+180.f);
-
-                lockedDegree = -degrees-offset;
-                offset = lockedDegree;
-
-            }
-
-
-        }
-
-
-        //offsetTextView.setText(String.format("%.2f",lockedDegree));
-        //
-        if (lockedRotation){
-            float _fixedDegrees = MeasurePoint.rotationStickTo(degrees+calibrationOffset);
-
-            directionImageButtton.setRotation(fixedRotation);
-            offsetTextView.setText(MeasurePoint.rotationToString(_fixedDegrees));
-            finalRotation = fixedRotation;
-
-        }
-        else{
-
-            directionImageButtton.setRotation(degrees+calibrationOffset);
-            offsetTextView.setText(MeasurePoint.rotationToString(degrees+calibrationOffset));
-            finalRotation = degrees+calibrationOffset;
-
-        }
-        if(finalRotation < 0) {finalRotation = 360.f + finalRotation;}
-        degreesTextView.setText(String.format("%.2f",(finalRotation)%360.f));
-
-
-    }
-    protected float[] lowPass( float[] input, float[] output ) {
-
-        if ( output == null ) return input;
-        for ( int i=0; i<input.length; i++ ) {
-            output[i] = output[i] + alpha * (input[i] - output[i]);
-        }
-        return output;
-    }
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-    }
-
-    @OnClick(R.id.rightButton) void startAutoMeasure()
-    {
-       Log.d(LogTAG,"startAutoMeasure onClick()");
-
-        if(scannerManagerInstance.getAutoScanManager().isPrepared()) {
-            perDirectionMeasures = 0;
-            //startAutoMeasureButton.setText("Scanning...");
-            Toast.makeText(getApplicationContext(),"Scanning...",Toast.LENGTH_LONG).show();
-            scannerManagerInstance.getAutoScanManager().start();
-
-        }
-        else {
-            Toast.makeText(getApplicationContext(),"Long press first on sector",Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public void selectSector(Point pointOnImage)
-    {
-
-      //  scannerManagerInstance.getAutoScanManager().setHookPoint(pointOnImage);
-        Point selectedSector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
-        scannerManagerInstance.getSectorManager().setCurrentSectorPoint(selectedSector);
-        markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
-        Sector _sector = scannerManagerInstance.getSectorManager().getCurrentSector();
-        selectedSectorTextView.setText(String.format("X%dY%d : %d",
-                _sector.getCoordinates().x,
-                _sector.getCoordinates().y ,_sector.size()));
-       // selectedSectorTextView.setText(String.format("X%dY%d : %d", selectedSector.x,selectedSector.y ,perSectorMeasurePoints.size()));
-    //   markupsImageManipulationManager.setCurrentSectorPoint(selectedSector);
-     /*   ArrayList<MeasurePoint> perSectorMeasurePoints = new ArrayList<>();
-
-        for (MeasurePoint _measurePoint: scannerManagerInstance.getAutoScanManager().getMeasurePoints()
-             ) {
-            if (_measurePoint.sector.equals(selectedSector)){
-                perSectorMeasurePoints.add(_measurePoint);
-            }
-        }
-*/
-
-        //
-      //  markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
-    }
-
-
-    @OnClick(R.id.directionImageButton) void changeScanDirection() {
-        fixedRotation = (fixedRotation+90.f)%360.f;
-        directionImageButtton.setRotation(fixedRotation);
-        if (!lockedRotation)
-        {
-            Log.d(LogTAG, String.format("old calibration offset = %.0f", calibrationOffset));
-            calibrationOffset = (fixedRotation - degrees)%360.f;
-            Log.d(LogTAG, String.format("new calibration offset = %.0f", calibrationOffset));
-        }
-        Log.d(LogTAG, String.format("changeDirection(): %.1f", fixedRotation));
-
-    }
-    @OnLongClick(R.id.directionImageButton) boolean lockScanDirection() {
-        Log.d(LogTAG,"lockDirection()");
-        lockedRotation = ! lockedRotation;
-        return true; //long click is not simple click
-    }
-
-
 }

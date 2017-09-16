@@ -7,6 +7,8 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 
+import pl.mysteq.software.rssirecordernew.extendables.SectorPoint;
+
 /**
  * Created by mysteq on 2017-04-09.
  */
@@ -57,13 +59,13 @@ public class PlanBundle {
     public void addMeasureFilename(String filename){
         this.measuresFileNames.add(filename);
     }
-    public static Point getSectorFromPointOnImage(Point pointOnImage){
-        Point sectorPoint = new Point();
+    public static SectorPoint getSectorFromPointOnImage(Point pointOnImage){
+       // SectorPoint sectorPoint = new SectorPoint();
 
         int sector_x = ((Double)(Math.floor(pointOnImage.x/PlanBundle.SECTOR_X_SIZE))).intValue();
         int sector_y = ((Double)(Math.floor(pointOnImage.y/PlanBundle.SECTOR_Y_SIZE))).intValue();
-        sectorPoint.set(sector_x,sector_y);
-        return sectorPoint;
+       // sectorPoint.set(sector_x,sector_y);
+        return new SectorPoint(sector_x,sector_y);
     }
 
 }

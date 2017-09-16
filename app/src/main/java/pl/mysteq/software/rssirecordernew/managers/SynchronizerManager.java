@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
 import okhttp3.MediaType;
@@ -32,6 +33,7 @@ import okhttp3.Response;
 import okhttp3.MultipartBody;
 import pl.mysteq.software.rssirecordernew.events.AddPlanEvent;
 import pl.mysteq.software.rssirecordernew.events.PlansReloadedEvent;
+import pl.mysteq.software.rssirecordernew.events.ProgressEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesDoneEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncBundlesEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncEvent;
@@ -42,6 +44,7 @@ import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncPlansEvent;
 import pl.mysteq.software.rssirecordernew.events.synchronizer.SyncRawPlansEvent;
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
 
+import static android.R.id.candidatesArea;
 import static android.R.id.list;
 import static android.content.Context.MODE_PRIVATE;
 import static pl.mysteq.software.rssirecordernew.managers.PlansFileManager.SHAREDPREF;
@@ -249,24 +252,32 @@ public class SynchronizerManager {
     }
 
     private void syncMeasures(SyncEvent event){
+        EventBus.getDefault().post(new ProgressEvent(0,true,true));
         File measuresDir = PlansFileManager.getInstance().getAppExternalMeasuresFolder();
         File[] measures = measuresDir.listFiles(PlansFileManager.getInstance().measureFilter);
+        float current = 0;
+        float max = measures.length;
 
 
         String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/measures");
         Request request = new Request.Builder().url(syncUrl).addHeader("content-type","application/json").build();
         //FIXME: could be slow and memory consuming! just send file as binary?!
         String measuresJSON = null;
+
         try {
             Response response = okHttpClient.newCall(request).execute();
             measuresJSON  = response.body().string();
             Log.d(LogTAG,"measuresJSON!");
             //Log.d(LogTAG,bundlesJSON);
-        } catch (java.net.ConnectException e){
+        } catch (java.net.ConnectException e) {
             Log.e(LogTAG, e.getMessage());
-            Log.e(LogTAG,"can't connect");
-
-        } catch (IOException e) {
+            Log.e(LogTAG, "can't connect");
+            EventBus.getDefault().post(new ProgressEvent(0, true, false).setText(e.getMessage()));
+        } catch (SocketTimeoutException e){
+            e.printStackTrace();
+            EventBus.getDefault().post(new ProgressEvent(0, true, false).setText(e.getMessage()));
+        }
+         catch (IOException e) {
             e.printStackTrace();
         }
         for (File measure : measures){
@@ -284,14 +295,19 @@ public class SynchronizerManager {
                 Log.d(LogTAG, uploadResponse.body().string());
             } catch (IOException e) {
                 e.printStackTrace();
+                EventBus.getDefault().post(new ProgressEvent(0, true, false).setText(e.getMessage()));
             }
+            current = current+1;
+            EventBus.getDefault().post(new ProgressEvent(current/max,false,true));
         }
         EventBus.getDefault().post(new SyncMeasuresDoneEvent());
 
     }
 
     public void syncPlans(SyncPlansEvent event){
+        EventBus.getDefault().post(new ProgressEvent(0,true,true));
         File plansDir = PlansFileManager.getInstance().getAppExternalPlansFolder();
+
         //FIXME: filter is not working and nobody knows why!!!
         //File[] plansNoFilter = plansDir.listFiles();
        // Log.d(LogTAG, String.format("plans with no filter: %d", plansNoFilter.length ));
@@ -302,6 +318,8 @@ public class SynchronizerManager {
         Request request = new Request.Builder().url(syncUrl).build();
         String plansRawJSON = null;
         //String rawplansJSON = null;
+        float max = plans.length;
+        float current = 0;
 
         try {
             Response response = okHttpClient.newCall(request).execute();
@@ -318,7 +336,7 @@ public class SynchronizerManager {
                         .addFormDataPart("file", plan.getName(),
                                 RequestBody.create(MediaType.parse("image/png"), plan))
                         .build();
-                Thread.sleep(1000);
+              //  Thread.sleep(1000);
                 Request uploadRequest = new Request.Builder()
                         .url(syncUrl)
                         .post(requestBody)
@@ -326,7 +344,8 @@ public class SynchronizerManager {
                         .build();
                 Response uploadResponse = okHttpClient.newCall(uploadRequest).execute();
                 Log.d(LogTAG, String.format("upload response %s", uploadResponse.body().string()));
-
+            current = current +1;
+                EventBus.getDefault().post(new ProgressEvent(current/max,false,true));
             }
         }
         catch (IOException | NullPointerException ex)
@@ -334,21 +353,24 @@ public class SynchronizerManager {
             ex.printStackTrace();
         } catch (JSONException e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            EventBus.getDefault().post(new ProgressEvent(0,true,false).setText(e.getMessage()));
         }
 
         for (File plan : plans) {
             Log.d(LogTAG,"plan: "+plan.getName());
         }
+
+        //EventBus.getDefault().post(new ProgressEvent(0,true,false));
         EventBus.getDefault().post(new SyncPlansDoneEvent(plansRawJSON));
     }
 
 
     public void syncBundlesWithServer(SyncBundlesEvent event) {
+        EventBus.getDefault().post(new ProgressEvent(0,true,true));
         File bundlesDir = PlansFileManager.getInstance().getAppExternalBundlesFolder();
         File[] bundles = bundlesDir.listFiles(PlansFileManager.getInstance().bundleFilter);
-
+        float current = 0;
+        float max = bundles.length;
 
         String syncUrl = String.format("%s%s:%d%s",event.getScheme(),event.getHostname(),event.getPort(),"/bundles");
         Request request = new Request.Builder().url(syncUrl).addHeader("content-type","application/json").build();
@@ -360,11 +382,14 @@ public class SynchronizerManager {
             bundlesJSON  = response.body().string();
             Log.d(LogTAG,"bundlesJSON:");
             Log.d(LogTAG,bundlesJSON);
-        } catch (java.net.ConnectException e){
+        } catch (java.net.ConnectException e) {
             Log.e(LogTAG, e.getMessage());
-            Log.e(LogTAG,"can't connect");
-
-        } catch (IOException e) {
+            Log.e(LogTAG, "can't connect");
+            EventBus.getDefault().post(new ProgressEvent(0,true,false).setText(e.getMessage()));
+        }  catch (SocketTimeoutException e) {
+            EventBus.getDefault().post(new ProgressEvent(0,true,false).setText(e.getMessage()));
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         for (File bundle : bundles){
@@ -382,7 +407,11 @@ public class SynchronizerManager {
                 Log.d(LogTAG, uploadResponse.body().string());
             } catch (IOException e) {
                 e.printStackTrace();
+                EventBus.getDefault().post(new ProgressEvent(0,true,false).setText(e.getMessage()));
+
             }
+            current= current+1;
+            EventBus.getDefault().post(new ProgressEvent(current/max,false,true));
         }
         EventBus.getDefault().post(new SyncBundlesDoneEvent(bundlesJSON));
 

@@ -17,18 +17,19 @@ import java.io.File;
 import java.util.ArrayList;
 
 import pl.mysteq.software.rssirecordernew.structures.PlanBundle;
+import pl.mysteq.software.rssirecordernew.structures.Sector;
 
 /**
  * Created by mysteq on 2017-04-22.
  */
 
 public class ImageManipulationManager {
-    Canvas canvas;
-    Canvas withSectorcanvas;
+    Canvas canvas = null;
+    Canvas withSectorcanvas = null;
     Paint pointPaint;
-    Bitmap bitmap;
-    Bitmap withSectorBitmap;
-    Rect currentSector;
+    Bitmap bitmap = null;
+    Bitmap withSectorBitmap = null;
+    //Rect currentSector;
     ArrayList<Rect> sectors;
     public ImageManipulationManager(){
             this.canvas = new Canvas();
@@ -81,8 +82,9 @@ public class ImageManipulationManager {
         Log.d(LogTAG, String.format("draw point x: %d, y: %d",point.x,point.y ));
         this.canvas.drawPoint(point.x,point.y,this.pointPaint);
     }
-    public void setBlankBitmap(Bitmap bitmap){
-        this.bitmap = Bitmap.createBitmap(bitmap.getWidth(),bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+    public void setBlankBitmap(Bitmap _bitmap){
+
+        this.bitmap = Bitmap.createBitmap(_bitmap.getWidth(),_bitmap.getHeight(), Bitmap.Config.ARGB_8888);
         //bitmap.recycle();
         this.canvas.setBitmap(this.bitmap);
     }
@@ -90,21 +92,34 @@ public class ImageManipulationManager {
     {
         return this.bitmap;
     }
+    public void redrawSectors(){
+        Paint sectorPaint = new Paint();
+        sectorPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+        sectorPaint.setStrokeJoin(Paint.Join.ROUND);
+        Rect drawRectSector = null;
+        ArrayList<Sector> _sectors = MyWifiScannerManager.getInstance().getSectorManager().getAllSectorsArrayList();
+        Log.d(LogTAG,"redrawSectors(), size: "+Integer.toString(_sectors.size()));
+        for (Sector sector : _sectors){
+            drawRectSector =  getRectFromSector(sector);
+            sectorPaint.setColor(sector.getColor());
+            Log.v(LogTAG,"Drawing sector for "+sector.toString());
+            this.canvas.drawRect(drawRectSector,sectorPaint);
+        }
+    }
     public Bitmap getWithSectorBitmap()
     {
        // this.canvas.setBitmap(this.bitmap);
-
-        if (currentSector != null){
+        Rect drawRectSector = getRectFromSector(MyWifiScannerManager.getInstance().getSectorManager().getCurrentSector());
+        if (drawRectSector != null){
             this.withSectorBitmap = Bitmap.createBitmap(this.bitmap);
             this.withSectorcanvas.setBitmap(this.withSectorBitmap);
             Paint sectorPaint = new Paint();
-
-            sectorPaint.setColor(Color.GREEN);
+            sectorPaint.setColor(Color.BLUE);
             //sectorPaint.setStrokeWidth(25.0f);
             sectorPaint.setStyle(Paint.Style.FILL_AND_STROKE);
             sectorPaint.setStrokeJoin(Paint.Join.ROUND);
-            Log.d(LogTAG, String.format("drawing Rect: %s", currentSector.toString()));
-            this.withSectorcanvas.drawRect(currentSector,sectorPaint);
+            Log.d(LogTAG, String.format("drawing Rect: %s", drawRectSector.toString()));
+            this.withSectorcanvas.drawRect(drawRectSector,sectorPaint);
             return this.withSectorBitmap;
         }
         else {
@@ -113,27 +128,6 @@ public class ImageManipulationManager {
         }
 
 
-    }
-    private void setSector(int sector_x, int sector_y){
-        int x0 = PlanBundle.SECTOR_X_SIZE*sector_x;
-        int y0 = PlanBundle.SECTOR_Y_SIZE*sector_y;
-        int x1 = x0+PlanBundle.SECTOR_X_SIZE;
-        int y1 = y0+PlanBundle.SECTOR_Y_SIZE;
-        currentSector = new Rect(x0,y0,x1,y1);
-        //currentSector = new Rect()
-
-        Log.d(LogTAG, String.format("setting sector x:%d, y:%d --> (left)x0=%d (top)y0=%d (right)x1=%d (bottom)y1=%d", sector_x,sector_y,x0,y0,x1,y1));
-    }
-    public void setCurrentSector(Point sector)
-    {
-        this.setSector(sector.x,sector.y);
-    }
-    public void deleteSector(){
-        currentSector = null;
-    }
-
-    public Rect getCurrentSector() {
-        return currentSector;
     }
 
     // public
@@ -144,5 +138,23 @@ public class ImageManipulationManager {
     public void rotate(float degrees,float px,float py)
     {
         this.canvas.rotate(degrees, px, py);
+    }
+
+    public Rect getRectFromSector(Sector sector){
+        if(sector == null) return null;
+
+        int x0 = PlanBundle.SECTOR_X_SIZE*sector.getCoordinates().x;
+        int y0 = PlanBundle.SECTOR_Y_SIZE*sector.getCoordinates().y;
+        int x1 = x0+PlanBundle.SECTOR_X_SIZE;
+        int y1 = y0+PlanBundle.SECTOR_Y_SIZE;
+        return new Rect(x0,y0,x1,y1);
+    }
+    public void recycle()
+    {
+        this.canvas.setBitmap(null);
+        this.withSectorcanvas.setBitmap(null);
+        if (this.withSectorBitmap!= null)
+            this.withSectorBitmap.recycle();
+        this.bitmap.recycle();
     }
 }
