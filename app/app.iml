@@ -115,7 +115,6 @@
     <orderEntry type="library" exported="" scope="TEST" name="nekohtml-1.9.6.2" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="asm-5.0.1" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="maven-repository-metadata-2.2.1" level="project" />
-    <orderEntry type="library" exported="" name="library-1.9.0" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="guava-20.0" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="junit-3.4.2" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="framework-3.4.2" level="project" />

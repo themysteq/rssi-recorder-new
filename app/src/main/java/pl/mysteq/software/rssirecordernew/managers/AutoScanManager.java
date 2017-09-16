@@ -1,6 +1,5 @@
 package pl.mysteq.software.rssirecordernew.managers;
 
-import android.graphics.Point;
 import android.util.Log;
 
 import org.greenrobot.eventbus.EventBus;
@@ -17,7 +16,6 @@ import pl.mysteq.software.rssirecordernew.events.PerformWifiScanEvent;
 import pl.mysteq.software.rssirecordernew.events.SubmitAutoScanEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompletedEvent;
 import pl.mysteq.software.rssirecordernew.structures.CustomScanResult;
-import pl.mysteq.software.rssirecordernew.managers.MyWifiScannerManager;
 import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
 
 /**
@@ -25,9 +23,9 @@ import pl.mysteq.software.rssirecordernew.structures.MeasurePoint;
  */
 
 public class AutoScanManager {
-    private static final int MAX_MEASURES_PER_DIRECTION = 11;
+    private static final int MAX_MEASURES_PER_DIRECTION = 10;
     private  static final  int DELAY = 0;
-    private  static final  int PERIOD = 4000;
+    private  static final  int PERIOD = 6000;
     private static final String LogTAG = "AutoScanManager";
     private int perDirectionMeasuresCounter = 0;
    // private int allMeasuresCounter = 0;
@@ -64,12 +62,17 @@ public class AutoScanManager {
             @Override
             public void run() {Log.d(LogTAG,"new PerformWifiScanEvent");
               EventBus.getDefault().post(new PerformWifiScanEvent());
-
             }
         },DELAY,PERIOD);
 
+    //EventBus.getDefault().post(new PerformWifiScanEvent());
     }
-    public void stop(){
+    public void abort(){
+        running = false;
+        if(timer != null) timer.cancel();
+        perDirectionMeasuresCounter = 0;
+    }
+    public void finish(){
         running = false;
         if(timer != null) timer.cancel();
      /*   for (MeasurePoint _mp: measurePoints
@@ -86,30 +89,31 @@ public class AutoScanManager {
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void scanCompleted(WifiScanCompletedEvent event){
-        if(perDirectionMeasuresCounter >= MAX_MEASURES_PER_DIRECTION){
-            this.stop();
-           // EventBus.getDefault().post(new AutoScanCompletedEvent());
 
-
-        }
         if(this.running) {
           ArrayList<CustomScanResult> results = MyWifiScannerManager.getInstance().getLastScanResult();
-            Log.d(LogTAG, "--->");
-            Log.d(LogTAG,results.toString());
-            Log.d(LogTAG, "<---");
+          //  Log.d(LogTAG, "--->");
+         //   Log.d(LogTAG,results.toString());
+          //  Log.d(LogTAG, "<---");
             MeasurePoint measurePoint = new MeasurePoint(results,
                     MyWifiScannerManager.getInstance().getSectorManager().getCurrentSectorPoint(),
                     Math.round(ScanningActivity.finalRotation));
-            //measurePoint.sector = MyWifiScannerManager.getInstance().getSectorManager().getCurrentSectorPoint();
+            measurePoint.setDirection(MeasurePoint.getDirection(ScanningActivity.finalRotation));
+            measurePoint.setOffset(Math.round(ScanningActivity.calibrationOffset));
             measurePoints.add(measurePoint);
             perDirectionMeasuresCounter++;
             EventBus.getDefault().post(new SubmitAutoScanEvent(perDirectionMeasuresCounter));
+            //EventBus.getDefault().post(new PerformWifiScanEvent());
             Log.d(LogTAG, String.format("scanCompleted received: %d", perDirectionMeasuresCounter));
         }
         else{
             Log.d(LogTAG, "scanCompleted received but AutoScanManager not running");
         }
         //FIXME: race condition!
+        if(perDirectionMeasuresCounter >= MAX_MEASURES_PER_DIRECTION){
+            this.finish();
+            // EventBus.getDefault().post(new AutoScanCompletedEvent());
+        }
 
     }
 
