@@ -143,5 +143,7 @@ public class SectorManager {
     public int getMeasuresCounter() {
         return measuresCounter;
     }
-
+    public void clearCurrent() {
+        getCurrentSector().clear();
+    }
 }

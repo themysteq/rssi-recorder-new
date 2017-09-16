@@ -62,4 +62,8 @@ public class Sector {
         if (this.size() >= 40) return Color.GREEN & transparency;
         else return Color.YELLOW & transparency;
     }
+    public void clear()
+    {
+        this.measurePoints.clear();
+    }
 }

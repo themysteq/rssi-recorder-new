@@ -423,5 +423,7 @@ public class SynchronizerManager {
     }
     */
 
-
+    public File getAppExternalSynchronizerTempFolder() {
+        return appExternalSynchronizerTempFolder;
+    }
 }
