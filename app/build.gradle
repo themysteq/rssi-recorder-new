@@ -27,17 +27,16 @@ dependencies {
     })
     //  compile 'com.github.bumptech.glide:glide:3.7.0'
     //   compile 'com.github.esafirm.android-image-picker:imagepicker:1.5.0'
-    
 
+    //compile 'com.android.support.constraint:constraint-layout:+'
     compile 'org.greenrobot:eventbus:3.0.0'
     compile 'com.google.code.gson:gson:2.8.0'
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.squareup.okhttp3:okhttp:3.8.0'
     compile 'com.github.angads25:filepicker:1.1.0'
     compile 'com.jakewharton:butterknife:8.6.0'
-    //compile 'com.android.support.constraint:constraint-layout:+'
-    compile 'com.pixplicity.easyprefs:library:1.9.0'
+   // compile 'com.pixplicity.easyprefs:library:1.9.0'
     testCompile 'junit:junit:4.12'
-    testCompile "org.robolectric:robolectric:3.4.2"
+    testCompile 'org.robolectric:robolectric:3.4.2'
     annotationProcessor 'com.jakewharton:butterknife-compiler:8.6.0'
 }

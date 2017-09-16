@@ -20,6 +20,13 @@ public class MeasurePoint extends Point {
     @SerializedName("rotation")
     public int rotation;
 
+    @SerializedName("offset")
+    public int offset = 0;
+
+    @SerializedName("direction")
+    public int direction = -1;
+
+
     @SerializedName("sector")
     public SectorPoint sector;
 
@@ -63,17 +70,11 @@ public class MeasurePoint extends Point {
         else if( value > (270-margin) && value < (270+margin)){ return "<<--";}
         else{ return "????";}
 
-        /*
-        if (( value > 0-margin) && (_rotationDegrees < 0+margin)){ return "/\\";}
-        else if (( _rotationDegrees > 90-margin) && (_rotationDegrees < 90+margin)){return "-->>";}
-        else if (( _rotationDegrees > 270-margin) && (_rotationDegrees < 270+margin)) { return "<<--";}
-        else if (( _rotationDegrees (margin/2))
-        */
 
     }
     public static float rotationStickTo(float _rotationDegrees)
     {
-        float margin = 35.f;
+        float margin = 30.f;
         if (_rotationDegrees > (360-margin) || _rotationDegrees < (margin)) { return 0.f;}
         else if(_rotationDegrees > (90-margin) && _rotationDegrees < (90+margin)) {return 90.f;}
         else if( _rotationDegrees > (180-margin) && _rotationDegrees < (180+margin)) {return 180.f;}
@@ -81,5 +82,23 @@ public class MeasurePoint extends Point {
         else{ return _rotationDegrees ;}
 
     }
+    public static int getDirection(float _rotationDegrees){
+        float margin = 30.f;
+        float value = (360+_rotationDegrees)%360;
 
+        // Log.v("rotationToString",Float.toString(value));
+        if (value > (360-margin) || value < (margin)) { return 0;}
+        else if(value > (90-margin) && value < (90+margin)) {return 3;}
+        else if( value > (180-margin) && value < (180+margin)) {return 6;}
+        else if( value > (270-margin) && value < (270+margin)){ return 9;}
+        else{ return -1;}
+    }
+
+    public void setDirection(int direction) {
+        this.direction = direction;
+    }
+
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
 }

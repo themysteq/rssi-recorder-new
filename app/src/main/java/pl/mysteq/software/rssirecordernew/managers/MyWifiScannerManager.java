@@ -214,10 +214,11 @@ public final class MyWifiScannerManager {
         return autoScanManager;
     }
 
+    /*
     public void invokeScanAsync(){
         EventBus.getDefault().post(new PerformWifiScanEvent());
     }
-
+*/
 
     @Subscribe(threadMode = ThreadMode.ASYNC)
     public void OnMessage(AutoScanCompletedEvent event){
