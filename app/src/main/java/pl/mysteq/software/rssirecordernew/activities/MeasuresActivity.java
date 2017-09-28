@@ -115,7 +115,11 @@ public class MeasuresActivity extends Activity {
         JsonMeasuresReader jsonMeasuresReader = new JsonMeasuresReader();
         for (String measureName: measures_names ) {
             MeasureBundle measureBundle = jsonMeasuresReader.run(new File(PlansFileManager.getInstance().getAppExternalMeasuresFolder(),measureName));
-            _measureBundles.add(measureBundle);
+            if(measureBundle != null) {
+                _measureBundles.add(measureBundle);
+            } else {
+                Log.e(LogTAG,"Bundle not found! " +measureName);
+            }
         }
         this.measureBundles.clear();
         this.measureBundles.addAll(_measureBundles);

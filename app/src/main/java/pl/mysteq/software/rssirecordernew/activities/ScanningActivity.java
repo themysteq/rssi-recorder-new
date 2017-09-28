@@ -111,7 +111,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     int currentMeasuresCounter = 0;
     int perDirectionMeasures = 0;
 
-    float calibrationOffset = 0;
+    public static float calibrationOffset = 0;
    // float calbratedRotation = 0;
     public static float finalRotation = 0;
 
@@ -204,7 +204,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     markupMeasuresImageView.scrollBy((int) distanceX, (int) distanceY);
                     return true;
                 }
-
+                /*
                 @Override
                 public boolean onSingleTapConfirmed(MotionEvent e) {
                     Log.d(LogTAG,"single tap - scan");
@@ -255,7 +255,7 @@ public class ScanningActivity extends Activity implements SensorEventListener {
                     }
                     return true;
                 }
-
+                */
                 @Override
                 public void onLongPress(MotionEvent e) {
                     Point pointOnView = getRelativePosition(markupMeasuresImageView.getRootView().findViewById(R.id.frameLayoutWithImages),e );
@@ -427,11 +427,12 @@ public class ScanningActivity extends Activity implements SensorEventListener {
     }
 
     public void selectSector(Point pointOnImage) {
-        EventBus.getDefault().post(new RefreshStatisticsEvent());
+
         SectorPoint selectedSector = PlanBundle.getSectorFromPointOnImage(pointOnImage);
         scannerManagerInstance.getSectorManager().setCurrentSectorPoint(selectedSector);
         scannerManagerInstance.getLastScanResult();
         markupMeasuresImageView.setImageBitmap(markupsImageManipulationManager.getWithSectorBitmap());
+        EventBus.getDefault().post(new RefreshStatisticsEvent());
     }
 
 

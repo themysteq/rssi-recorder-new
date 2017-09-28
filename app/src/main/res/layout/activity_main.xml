@@ -45,19 +45,7 @@
                 android:textSize="24sp"
                 android:textAllCaps="false" />
 
-            <Button
-                android:id="@+id/pickPlanButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_column="0"
-                android:layout_row="2"
-                android:fontFamily="sans-serif-medium"
-                android:text="-- pick plan --"
-                android:textAlignment="center"
-                android:textAllCaps="false"
-                android:textSize="24sp"
-                android:textStyle="normal|italic"
-                android:visibility="visible" />
+
 
             <Button
                 android:text="Continue last measure"
@@ -70,6 +58,32 @@
                 android:textSize="24sp"
                 android:textAllCaps="false"
                 android:enabled="false" />
+            <Button
+                android:id="@+id/openViewMeasureButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="2"
+                android:fontFamily="sans-serif-medium"
+                android:text="View measures"
+                android:textAlignment="center"
+                android:textAllCaps="false"
+                android:textSize="24sp" />
+
+            <Button
+                android:id="@+id/algorithmLaunchButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_marginTop="20dp"
+                android:layout_row="5"
+                android:fontFamily="sans-serif-medium"
+                android:text="Navigate"
+                android:textAlignment="center"
+                android:textAllCaps="false"
+                android:textSize="30sp"
+                android:textStyle="normal|italic"
+                android:visibility="gone" />
 
             <Button
                 android:id="@+id/synchronizeButton"
@@ -88,24 +102,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_column="0"
-                android:layout_row="5"
+                android:layout_row="3"
                 android:fontFamily="sans-serif-medium"
                 android:text="Manage plans"
                 android:textAlignment="center"
                 android:textAllCaps="false"
                 android:textSize="24sp" />
 
-            <Button
-                android:id="@+id/openViewMeasureButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_column="0"
-                android:layout_row="4"
-                android:fontFamily="sans-serif-medium"
-                android:text="View measures"
-                android:textAlignment="center"
-                android:textAllCaps="false"
-                android:textSize="24sp" />
+
             <Button
                 android:id="@+id/settingsButton"
                 android:layout_width="wrap_content"
@@ -115,6 +119,16 @@
                 android:fontFamily="sans-serif-medium"
                 android:text="Settings"
                 android:textAlignment="center"
+                android:textAllCaps="false"
+                android:textSize="24sp" />
+
+            <Button
+                android:id="@+id/openRecordPathButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_column="0"
+                android:layout_row="4"
+                android:text="Record Path"
                 android:textAllCaps="false"
                 android:textSize="24sp" />
 

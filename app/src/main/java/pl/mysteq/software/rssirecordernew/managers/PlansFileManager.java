@@ -189,13 +189,16 @@ public final class PlansFileManager {
         for (File file : bundles) {
             try {
                 planBundle = jsonPlanBundleReader.run(file);
-                Log.d(LogTAG, "Read from storage bundle: " + planBundle.getPlanBundleName());
-                this.bundlesContainerList.add(planBundle);
+                if (planBundle != null) {
+                    Log.d(LogTAG, "Read from storage bundle: " + planBundle.getPlanBundleName());
+                    this.bundlesContainerList.add(planBundle);
+                } else{
+                    Log.e(LogTAG,"planBundle is null");
+                }
             }
             catch (NullPointerException e){
                // Log.e(LogTAG,e.getMessage());
                 Log.e(LogTAG,e.getMessage(),e);
-
             }
         }
         EventBus.getDefault().post(new BundlesReloadedEvent());

@@ -143,5 +143,20 @@ public class SectorManager {
     public int getMeasuresCounter() {
         return measuresCounter;
     }
+    public void clearCurrent() {
+        getCurrentSector().clear();
+    }
+    public void clearAll()
+    {
+        Log.d(LogTAG,"clearAll() start");
+        //ArrayList<MeasurePoint> allPoints = new ArrayList<>();
+        Set<Integer> columns = sectors.keySet();
+        for(Integer x : columns){
+            for(Integer y : sectors.get(x).keySet())
+            {
+                sectors.get(x).get(y).clear();
+            }
+        }
+    }
 
 }

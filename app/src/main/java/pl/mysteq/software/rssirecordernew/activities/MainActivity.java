@@ -6,6 +6,8 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.opengl.GLES10;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -21,6 +23,8 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
+
+import javax.microedition.khronos.opengles.GL10;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -40,6 +44,7 @@ public class MainActivity extends Activity {
     public static final int INTENT_RESULT_CODE_CHOOSE_PLAN = 2001;
     public static final int INTENT_RESULT_CODE_SCANNING = 2002;
     public static final int INTENT_RESULT_CODE_SELECT_MEASURE = 2003;
+    public static final int INTENT_RESULT_CODE_NAVIGATE = 2069;
     private static final String LogTAG = "MainActivity";
     String selectedBundle = null;
     String selectedMeasureUUID = null;
@@ -68,6 +73,11 @@ public class MainActivity extends Activity {
         startActivity(settingsActivity);
     }
 
+    @OnClick(R.id.openRecordPathButton) void startRecordPathActivity(){
+        Intent recordPathActivity = new Intent(getBaseContext(),RecordPathActivity.class);
+        startActivity(recordPathActivity);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,6 +91,7 @@ public class MainActivity extends Activity {
         requestNeededPermissions();
         final SharedPreferences sharedPreferences = getSharedPreferences(SHAREDPREF,MODE_PRIVATE);
         selectedBundle = sharedPreferences.getString(SELECTED_PLANBUNDLE_KEY, null);
+
 
 
 
@@ -125,8 +136,6 @@ public class MainActivity extends Activity {
                         return;
                     }
                     File measureFile = new File(measureBundle.getFilepath());
-                 //   File measureFile = plansFileManager.generateNewMeasureFile(selectedBundle);
-
                     newMeasureIntent.putExtra("PLAN_NAME",selectedBundle);
                     newMeasureIntent.putExtra("MEASURE_NAME", measureFile.getName());
                     newMeasureIntent.putExtra("MEASURE_UUID",measureBundle.getUuid());
@@ -142,13 +151,8 @@ public class MainActivity extends Activity {
                 String measureName = getSharedPreferences(SHAREDPREF,MODE_PRIVATE).getString("LAST_MEASURE_NAME",null);
                 if(selectedMeasureUUID!= null && selectedBundle != null)
                 {
-
-                    //String lastBundle = getSharedPreferences(SHAREDPREF,MODE_PRIVATE).getString("LAST_MEASURE_BUNDLE",null);
                     progressDialog.show();
                     progressDialog.setCancelable(false);
-                    //if(lastBundle!= null && lastBundle.equals(selectedBundle)){
-                   //     Log.d(LogTAG, String.format("Continue measure %s for plan %s", measureName,selectedBundle ));
-                   // }
                     Log.d(LogTAG,"last bundle: "+selectedBundle);
 
                     PlanBundle planBundle = PlansFileManager.getInstance().getBundleByName(selectedBundle);
@@ -159,7 +163,6 @@ public class MainActivity extends Activity {
                         {
                             //jest taki bundle z takim zapisem pomiarow
                             Log.d(LogTAG,"Loading past data... : "+measure);
-
                             Intent continueMeasureIntent = new Intent(getBaseContext(),ScanningActivity.class);
                             continueMeasureIntent.putExtra("PLAN_NAME",selectedBundle);
                             continueMeasureIntent.putExtra("MEASURE_NAME", measure);
@@ -167,13 +170,11 @@ public class MainActivity extends Activity {
                            continueMeasureIntent.putExtra("MEASURE_FULLPATH",measure);
                             progressDialog.show();
                             startActivityForResult(continueMeasureIntent,INTENT_RESULT_CODE_SCANNING);
-
                         }
                     }
                     progressDialog.dismiss();
                 }
                 else{
-
                     Log.d(LogTAG,"Can't continue");
                 }
             }
@@ -252,6 +253,11 @@ public class MainActivity extends Activity {
 
             }
         }
+        else if (requestCode == INTENT_RESULT_CODE_NAVIGATE)
+        {
+            Log.d(LogTAG,"INTENT_RESULT_CODE_NAVIGATE");
+
+        }
         else
         {
             Log.d(LogTAG,"Unknown Intent result");
@@ -288,6 +294,7 @@ public class MainActivity extends Activity {
         Log.v(LogTAG,"onStart()");
         super.onStart();
         progressDialog.show();
+// maxSize[0] now contains max size(in both dimensions)
     }
 
     @Override
@@ -306,6 +313,7 @@ public class MainActivity extends Activity {
         }
 
         super.onResume();
+        progressDialog.dismiss();
     }
 /*
     @Override
