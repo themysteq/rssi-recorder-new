@@ -99,7 +99,7 @@ public class AutoScanManager {
             EventBus.getDefault().post(new AutoScanCompletedEvent());
         }else
         {
-            throw new IllegalStateException("Finishing already finished!");
+            //throw new IllegalStateException("Finishing already finished!");
         }
     }
     public void pause(){}

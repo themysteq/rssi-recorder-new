@@ -36,6 +36,7 @@ import butterknife.OnCheckedChanged;
 import butterknife.OnClick;
 import pl.mysteq.software.rssirecordernew.R;
 import pl.mysteq.software.rssirecordernew.events.AutoScanCompletedEvent;
+import pl.mysteq.software.rssirecordernew.events.PerformWifiScanEvent;
 import pl.mysteq.software.rssirecordernew.events.SubmitAutoScanEvent;
 import pl.mysteq.software.rssirecordernew.events.WifiScanCompletedEvent;
 import pl.mysteq.software.rssirecordernew.extendables.SectorPoint;
@@ -172,12 +173,12 @@ public class RecordPathActivity extends Activity implements SensorEventListener 
         scannerManagerInstance = MyWifiScannerManager.getInstance().init(this);
         scannerManagerInstance.getAutoScanManager().setUseExternalRotation(true);
         scannerManagerInstance.getAutoScanManager().setExternalOffset(calibrationOffset);
-       // scannerManagerInstance.scan();
+        scannerManagerInstance.scan();
 
 
         dialog = new ProgressDialog(this,ProgressDialog.STYLE_SPINNER);
         dialog.setCancelable(false);
-        dialog.setMessage("Saving...");
+        dialog.setMessage("Stopping...");
     }
 
     @OnClick(R.id.startRecordButton)
@@ -206,6 +207,7 @@ public class RecordPathActivity extends Activity implements SensorEventListener 
             scannerManagerInstance.getAutoScanManager().start();
 
             recordRightTextView.setText(String.format("name: %s", measureBundle.getUuid()));
+            EventBus.getDefault().post(new PerformWifiScanEvent());
         }
     }
     @OnCheckedChanged(R.id.slowScanSwitch)
@@ -227,7 +229,7 @@ public class RecordPathActivity extends Activity implements SensorEventListener 
 
         startRecordButton.setText("Start record");
         slowScanSwitch.setEnabled(true);
-        recordLeftTextView.setText(String.format("count: %s",0));
+        //recordLeftTextView.setText(String.format("count: %s",0));
         dialog.dismiss();
         recording = false;
     }
@@ -236,10 +238,11 @@ public class RecordPathActivity extends Activity implements SensorEventListener 
     void saveMeasuresToFile()
     {
        // ArrayList<MeasurePoint> measures = scannerManagerInstance.getAutoScanManager().getMeasurePoints();
-       // String _count = Integer.toString(measures.size());
-      //  Toast.makeText(this,"saving "+_count,Toast.LENGTH_SHORT).show();
+          //  String _count = Integer.toString(measures.size());
+         //
        // measureBundle.setMeasures(measures);
         scannerManagerInstance.saveToFile(measureBundle);
+        Toast.makeText(this,"Saved", Toast.LENGTH_SHORT).show();
 
     }
 }

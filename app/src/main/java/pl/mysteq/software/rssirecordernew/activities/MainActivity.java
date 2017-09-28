@@ -6,6 +6,8 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.opengl.GLES10;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -21,6 +23,8 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
+
+import javax.microedition.khronos.opengles.GL10;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -72,36 +76,6 @@ public class MainActivity extends Activity {
     @OnClick(R.id.openRecordPathButton) void startRecordPathActivity(){
         Intent recordPathActivity = new Intent(getBaseContext(),RecordPathActivity.class);
         startActivity(recordPathActivity);
-    }
-    @OnClick(R.id.algorithmLaunchButton) public void algorithmLaunch()
-    {
-
-        Log.d(LogTAG,"last bundle: "+selectedBundle);
-
-        PlanBundle planBundle = PlansFileManager.getInstance().getBundleByName(selectedBundle);
-        for (String measure : planBundle.getMeasuresFileNames()) {
-            Log.d(LogTAG,planBundle.getPlanBundleName()+": measure :"+measure);
-            //String[] elems = measure.split("\\.");
-            if(selectedMeasureUUID == null ){
-                Toast.makeText(getApplicationContext(),"No measure selected",Toast.LENGTH_SHORT).show();
-                return;
-            }
-            if(selectedMeasureUUID.equals(measure.split("\\.")[0]))
-            {
-                //jest taki bundle z takim zapisem pomiarow
-                Log.d(LogTAG,"Loading past data... : "+measure);
-                Intent navigateActivity = new Intent(getBaseContext(),AlgorithmActivity.class);
-                navigateActivity.putExtra("PLAN_NAME",selectedBundle);
-                navigateActivity.putExtra("MEASURE_NAME", measure);
-                navigateActivity.putExtra("MEASURE_UUID",selectedMeasureUUID);
-                navigateActivity.putExtra("MEASURE_FULLPATH",measure);
-                progressDialog.show();
-                startActivityForResult(navigateActivity,INTENT_RESULT_CODE_NAVIGATE);
-            }
-        }
-
-      //  startActivity(navigateActivity);
-
     }
 
     @Override
@@ -320,6 +294,7 @@ public class MainActivity extends Activity {
         Log.v(LogTAG,"onStart()");
         super.onStart();
         progressDialog.show();
+// maxSize[0] now contains max size(in both dimensions)
     }
 
     @Override

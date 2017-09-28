@@ -89,14 +89,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="TextView" />
+                android:text="count: " />
 
             <TextView
                 android:id="@+id/recordRightTextView"
-                android:layout_width="wrap_content"
+                android:layout_width="200dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
-                android:text="TextView" />
+                android:text="(record id not yet created)" />
         </LinearLayout>
 
         <LinearLayout
